@@ -15,6 +15,8 @@ import logging
 import sys
 
 from .config import Config, ConfigError, load_config
+from .config import Config, ConfigError, load_config
+from .probe import probe
 
 # Module-level logger named after the module ("flightlog.cli"). Using
 # logging.getLogger(__name__) throughout rather than the root logger means log
@@ -83,6 +85,9 @@ def build_parser() -> argparse.ArgumentParser:
     # 2 rather than falling through to the end of main() with command=None.
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("check", help="validate configuration and exit")
+    subparsers.add_parser(
+    "probe", help="make one request and print the full response"
+    )
     return parser
 
 
@@ -124,6 +129,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "check":
         return cmd_check(config)
+    
+    if args.command == "probe":
+        return probe(config)
 
     # Unreachable while `check` is the only subcommand and required=True is
     # set. Kept as a defensive default so that adding a subparser and

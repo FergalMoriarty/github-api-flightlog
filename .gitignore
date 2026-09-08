@@ -17,3 +17,4 @@ htmlcov/
 # Data
 *.db
 data/
+probe-output.txt

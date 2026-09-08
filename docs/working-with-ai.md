@@ -79,3 +79,35 @@ than expected.
 
 Caught by checking the claim against all 100 records rather than the single
 record the probe output happened to print.
+
+## 2026-09-08 — 422 predicted for an invalid branch; GitHub returns 404
+
+The plan for the error taxonomy listed 422 as the expected response to a
+well-formed request carrying an invalid parameter, and an invalid `sha` was
+proposed as the way to trigger it.
+
+GitHub returns 404. An unresolvable ref is treated as a missing resource, not
+as a bad request. 422 is reserved for requests that are syntactically valid and
+semantically impossible — a value outside a permitted range, a required field
+omitted from a write — and the commits endpoint is read-only with permissive
+parameters, so it is difficult to provoke one from it at all.
+
+`ValidationError` stays in the taxonomy because 422 is documented behaviour and
+appears on write endpoints, but it is marked in the code as unobserved.
+Claiming to handle a status code the tool has never seen is the kind of claim
+this project is meant to avoid.
+
+The more useful finding is what 404 turned out to cover. Three distinct causes
+produced byte-identical responses, down to `content-length: 132`:
+
+  1. the repository does not exist
+  2. the repository exists and the token cannot see it (`github/github`)
+  3. repository and token both fine, but a parameter did not resolve
+
+Case 2 is deliberate. Distinguishing "forbidden" from "nonexistent" would let
+anyone enumerate private repositories by watching status codes. The cost falls
+on whoever is debugging: a 404 cannot be resolved from the response alone, and
+a user who insists the repository exists is often right.
+
+Caught by triggering each failure and reading the response rather than writing
+the exception classes from the HTTP specification.

@@ -18,6 +18,8 @@ import logging
 import requests
 
 from .config import Config
+from .config import Config
+from .errors import GitHubError, ServerError, classify
 
 log = logging.getLogger(__name__)
 
@@ -79,7 +81,7 @@ def build_commits_url(config: Config) -> str:
     return f"{config.api_url}/repos/{config.owner}/{config.repo_name}/commits"
 
 
-def probe(config: Config) -> int:
+def probe(config: Config, repo_override: str | None = None) -> int:
     """Make one request and print everything about the response.
 
     Deliberately has no error handling. If this raises, the traceback is the
@@ -87,7 +89,14 @@ def probe(config: Config) -> int:
     error taxonomy, built from responses observed here rather than from
     assumptions about what GitHub returns.
     """
-    url = build_commits_url(config)
+        # An override lets the error paths be exercised without editing .env.
+    # Deliberately not validated the way TARGET_REPO is — the point is to send
+    # malformed values and see what GitHub does with them.
+    if repo_override:
+        owner, _, name = repo_override.partition("/")
+        url = f"{config.api_url}/repos/{owner}/{name}/commits"
+    else:
+        url = build_commits_url(config)
 
     # Query parameters as a dict rather than appended to the URL string, so
     # requests percent-encodes them. The `since` value contains colons, which
@@ -137,6 +146,31 @@ def probe(config: Config) -> int:
     # than a caught exception would.
     payload = response.json()
 
+        # Classify before parsing. An error body is a JSON object where success is
+    # an array, so parsing first and inspecting later would mean the shape
+    # check happens in two places instead of one.
+    #
+    # Caught rather than propagated here because probe is a diagnostic command:
+    # the point is to show what came back, and a traceback would bury the
+    # headers already printed above. Increment 3 onward lets these propagate.
+    try:
+        classify(response)
+    except GitHubError as exc:
+        print("CLASSIFIED AS")
+        print(f"  Type          : {type(exc).__name__}")
+        print(f"  Retryable     : {isinstance(exc, ServerError)}")
+        print(f"  Message       : {exc.message}")
+        if exc.request_id:
+            print(f"  Request id    : {exc.request_id}")
+        if exc.documentation_url:
+            print(f"  Documentation : {exc.documentation_url}")
+        required = getattr(exc, "required_permission", None)
+        if required:
+            print(f"  Requires      : {required}")
+        return 1
+
+    payload = response.json()
+
     print("BODY")
     print(f"  Type          : {type(payload).__name__}")
     if isinstance(payload, list):
@@ -146,9 +180,6 @@ def probe(config: Config) -> int:
             print("FIRST RECORD")
             print(json.dumps(payload[0], indent=2))
     else:
-        # A dict here means an error response — GitHub returns errors as a
-        # JSON object with "message" and "documentation_url", not as an array.
-        # That shape difference is itself diagnostic.
         print(json.dumps(payload, indent=2))
 
     return 0

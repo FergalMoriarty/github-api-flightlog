@@ -85,8 +85,12 @@ def build_parser() -> argparse.ArgumentParser:
     # 2 rather than falling through to the end of main() with command=None.
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("check", help="validate configuration and exit")
-    subparsers.add_parser(
-    "probe", help="make one request and print the full response"
+    probe_parser = subparsers.add_parser(
+        "probe", help="make one request and print the full response"
+    )
+    probe_parser.add_argument(
+        "--repo",
+        help="override TARGET_REPO for this call, e.g. dbt-labs/no-such-repo",
     )
     return parser
 
@@ -129,16 +133,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "check":
         return cmd_check(config)
-    
-    if args.command == "probe":
-        return probe(config)
 
-    # Unreachable while `check` is the only subcommand and required=True is
-    # set. Kept as a defensive default so that adding a subparser and
+    if args.command == "probe":
+        return probe(config, repo_override=args.repo)
+
+    # Unreachable while every subcommand has a branch above and required=True
+    # is set. Kept as a defensive default so that adding a subparser and
     # forgetting the dispatch branch fails visibly with exit 1 rather than
     # succeeding silently.
     return 1
-
 
 if __name__ == "__main__":
     # SystemExit rather than sys.exit() — identical effect, since sys.exit

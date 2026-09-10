@@ -17,6 +17,7 @@ import sys
 from .config import Config, ConfigError, load_config
 from .config import Config, ConfigError, load_config
 from .probe import probe
+from .fetch import fetch_commits
 
 # Module-level logger named after the module ("flightlog.cli"). Using
 # logging.getLogger(__name__) throughout rather than the root logger means log
@@ -92,6 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--repo",
         help="override TARGET_REPO for this call, e.g. dbt-labs/no-such-repo",
     )
+    subparsers.add_parser("fetch", help="page through all commits and report counts")
     return parser
 
 
@@ -137,12 +139,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "probe":
         return probe(config, repo_override=args.repo)
 
+    if args.command == "fetch":
+        return fetch_commits(config)
+
     # Unreachable while every subcommand has a branch above and required=True
     # is set. Kept as a defensive default so that adding a subparser and
     # forgetting the dispatch branch fails visibly with exit 1 rather than
     # succeeding silently.
     return 1
-
+    
 if __name__ == "__main__":
     # SystemExit rather than sys.exit() — identical effect, since sys.exit
     # raises SystemExit, but this makes the exit code's path out of main()

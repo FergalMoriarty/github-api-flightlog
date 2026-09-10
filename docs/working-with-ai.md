@@ -24,6 +24,12 @@ reached in under a minute, and against recorded fixtures in the test suite.
 
 Caught by working out the arithmetic before writing the code rather than after.
 
+**Confirmed by measurement, 2026-09-08.** A full year-bounded pull of
+`dbt-labs/dbt-core` cost 42 requests — 4,172 commits at 100 per page — against
+a 5,000/hour quota. 0.84%. The original estimate of ~100 requests was for a
+full history pull and was high for this workload; the conclusion that the limit
+is unreachable in normal operation holds, and is stronger than estimated.
+
 ## 2026-09-03 — Repository name implied a generality the code does not have
 
 An earlier name for this repo was `git-api-flightlog`. Git and GitHub are

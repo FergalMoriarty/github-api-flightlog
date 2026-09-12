@@ -137,3 +137,15 @@ a test that passed and demonstrated nothing. Fixed by passing the threshold
 explicitly as an argument.
 
 Caught by noticing that `waits=0` after a run that should have waited.
+
+## 2026-09-12 — Module constants as default parameters cannot be patched at runtime
+
+Second occurrence of the same mistake. A test script set
+`flightlog.retry.BASE_DELAY_SECONDS = 0.05` to make the backoff demonstration
+finish quickly, and the retries ran at the production delays of 1.2s and 1.9s
+regardless.
+
+`compute_delay(attempt, *, base: float = BASE_DELAY_SECONDS, ...)` binds the
+constant's value when the function is defined. Rebinding the module attribute
+afterwards changes the attribute and nothing else. The same error had already
+been made with

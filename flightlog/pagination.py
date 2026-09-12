@@ -22,6 +22,7 @@ import requests
 from .config import Config
 from .errors import classify
 from .ratelimit import RateLimitState
+from .retry import RetryStats, with_retry
 
 log = logging.getLogger(__name__)
 
@@ -107,6 +108,7 @@ def iter_pages(
     max_pages: int | None = None,
     timeout: tuple[int, int] = (5, 30),
     rate_limit: RateLimitState | None = None,
+    retry_stats: RetryStats | None = None,
 ) -> Iterator[PageResult]:
     """Yield pages until the Link header stops offering a next one.
 
@@ -120,6 +122,10 @@ def iter_pages(
     shares one view of the quota instead of keeping two that each see half the
     spend.
 
+    retry_stats accumulates what the retry logic did, for the run report. Also
+    passed in, and for the same reason: the report wants one total across the
+    whole run, not one per resource.
+
     max_pages caps the pull for development. It is NOT a safety net against a
     runaway loop: termination comes from the absence of rel="next", and if that
     logic were wrong a cap would only hide it at a different number.
@@ -130,6 +136,43 @@ def iter_pages(
     # them again would append duplicates to a URL that already has them.
     next_params: dict[str, Any] | None = params
 
+    def fetch_one(request_url: str, request_params: dict[str, Any] | None):
+        """One request, classified. The unit that gets retried.
+
+        Defined inside iter_pages so it closes over session, headers and
+        timeout — with_retry takes a zero-argument callable precisely so that
+        the retry policy knows nothing about HTTP.
+
+        The rate limit update happens here, before classify raises. A 403 for
+        quota exhaustion still carries the rate limit headers, and they are
+        exactly what is needed to know how long to wait — so they must be
+        captured before the exception unwinds the stack. On a retry that
+        matters even more: without it, the second attempt would be made
+        blind.
+        """
+        response = session.get(
+            request_url, headers=headers, params=request_params, timeout=timeout
+        )
+        if rate_limit is not None:
+            rate_limit.update(response)
+        classify(response)
+        return response
+
+    def wait_for_reset(_exc) -> float:
+        """Rate limit callback for with_retry.
+
+        Delegates to RateLimitState, which knows the reset timestamp. Backoff
+        would only be guessing at a number the server already told us.
+
+        threshold=0 because we are here having already been refused: the
+        question is no longer "are we close to the limit" but "wait until it
+        resets". Passing the normal threshold would be checking a condition
+        that the refusal has already answered.
+        """
+        if rate_limit is None:
+            return 0.0
+        return rate_limit.wait_if_needed(threshold=0)
+
     while True:
         # Preemptive check, before the request rather than after a refusal.
         # No-op on the first iteration, when nothing is known yet.
@@ -137,19 +180,18 @@ def iter_pages(
             rate_limit.wait_if_needed()
 
         log.debug("fetching page %d: %s", page_number, url)
-        response = session.get(url, headers=headers, params=next_params, timeout=timeout)
 
-        # Update before classify. A 403 for quota exhaustion still carries the
-        # rate limit headers, and they are precisely what is needed to know how
-        # long to wait — so they must be captured before the exception is
-        # raised and unwinds the stack.
-        if rate_limit is not None:
-            rate_limit.update(response)
-
-        # Exceptions propagate here, unlike in probe where they were caught for
-        # display. A failure mid-pull must stop the run rather than be
-        # swallowed into a partial result that looks complete.
-        classify(response)
+        # Bound at call time with default arguments rather than by closure.
+        # A bare `lambda: fetch_one(url, next_params)` would capture the
+        # variables, not their values, and both are reassigned at the bottom of
+        # this loop — so a retry would re-fetch whatever page the loop had
+        # moved on to. Exactly the class of bug that produces a plausible wrong
+        # answer rather than an error.
+        response = with_retry(
+            lambda u=url, p=next_params: fetch_one(u, p),
+            stats=retry_stats,
+            on_rate_limit=wait_for_reset,
+        )
 
         records = response.json()
         if not isinstance(records, list):

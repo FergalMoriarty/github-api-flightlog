@@ -16,6 +16,7 @@ from .config import Config
 from .pagination import iter_pages
 from .probe import TIMEOUT, build_commits_url, build_headers
 from .ratelimit import RateLimitState
+from .retry import RetryStats
 
 log = logging.getLogger(__name__)
 
@@ -24,11 +25,14 @@ def fetch_commits(config: Config) -> int:
     """Page through commits and print the run accounting."""
     started = time.monotonic()
 
-    # One state object for the whole run. When increment 9 adds pull requests,
-    # the same object is passed to both — commits and PRs bill the same `core`
-    # quota, so two separate views would each see half the spend and neither
-    # would wait when it should.
+    # One state object each for the whole run. When increment 9 adds pull
+    # requests, the same objects are passed to both — commits and PRs bill the
+    # same `core` quota, so two separate views would each see half the spend
+    # and neither would wait when it should. The same argument applies to the
+    # retry totals: the report wants one figure for the run, not one per
+    # resource.
     rate_limit = RateLimitState()
+    retry_stats = RetryStats()
 
     total_records = 0
     pages = 0
@@ -43,6 +47,7 @@ def fetch_commits(config: Config) -> int:
             max_pages=config.max_pages,
             timeout=TIMEOUT,
             rate_limit=rate_limit,
+            retry_stats=retry_stats,
         ):
             pages += 1
             total_records += len(page.records)
@@ -73,7 +78,18 @@ def fetch_commits(config: Config) -> int:
         status = "complete" if pages >= expected_pages else "INCOMPLETE"
         print(f"  Pages available  : {expected_pages}  ({status})")
     print(f"  Records          : {total_records}")
-    print(f"  Requests used    : {pages}")
+    print(f"  Requests made    : {retry_stats.attempts}")
+    if retry_stats.retries:
+        # Per-cause rather than a bare total, because the causes call for
+        # different responses: repeated 502s are GitHub's problem, repeated
+        # timeouts are probably the network at this end.
+        causes = ", ".join(
+            f"{cause} x{count}" for cause, count in sorted(retry_stats.by_cause.items())
+        )
+        print(f"  Retries          : {retry_stats.retries} ({causes})")
+        print(f"  Retry waiting    : {retry_stats.seconds_waited:.1f}s")
+    else:
+        print(f"  Retries          : 0")
     print(f"  Quota            : {rate_limit.remaining} of {rate_limit.limit} remaining")
     if rate_limit.reset_datetime:
         print(f"  Quota resets     : {rate_limit.reset_datetime.isoformat()}")

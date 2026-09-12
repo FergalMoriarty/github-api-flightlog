@@ -21,6 +21,7 @@ import requests
 
 from .config import Config
 from .errors import classify
+from .ratelimit import RateLimitState
 
 log = logging.getLogger(__name__)
 
@@ -105,23 +106,24 @@ def iter_pages(
     params: dict[str, Any] | None = None,
     max_pages: int | None = None,
     timeout: tuple[int, int] = (5, 30),
+    rate_limit: RateLimitState | None = None,
 ) -> Iterator[PageResult]:
     """Yield pages until the Link header stops offering a next one.
 
-    A generator rather than a function returning a list, for two reasons. The
-    caller can begin processing page one while later pages are still being
-    fetched, and — more importantly here — a 41-page pull never has to hold all
-    4,050 records in memory at once. Against a repository with 200,000 commits
-    that distinction stops being academic.
+    A generator rather than a list, so a 42-page pull never holds all 4,172
+    records in memory at once. Against a repository with 200,000 commits that
+    stops being academic.
+
+    rate_limit, if supplied, is checked before every request and updated after
+    every response. Passed in rather than created here so that a caller pulling
+    several resources — commits and pull requests both bill the `core` bucket —
+    shares one view of the quota instead of keeping two that each see half the
+    spend.
 
     max_pages caps the pull for development. It is NOT a safety net against a
     runaway loop: termination comes from the absence of rel="next", and if that
-    logic were wrong a cap would merely hide it at a different number.
+    logic were wrong a cap would only hide it at a different number.
     """
-    # A Session rather than bare requests.get, for connection reuse. Without
-    # one, each of the 41 requests opens a new TCP connection and repeats the
-    # TLS handshake — measurably slower over a long pull, and needless load on
-    # the other end.
     page_number = 1
     # Parameters apply to the FIRST request only. Every subsequent URL comes
     # from the Link header with its parameters already embedded, and passing
@@ -129,23 +131,32 @@ def iter_pages(
     next_params: dict[str, Any] | None = params
 
     while True:
+        # Preemptive check, before the request rather than after a refusal.
+        # No-op on the first iteration, when nothing is known yet.
+        if rate_limit is not None:
+            rate_limit.wait_if_needed()
+
         log.debug("fetching page %d: %s", page_number, url)
         response = session.get(url, headers=headers, params=next_params, timeout=timeout)
 
-        # Classify before anything else. An error body is a JSON object where
-        # success is an array, so parsing first would mean handling the shape
-        # difference in two places. Exceptions propagate — unlike in probe,
-        # where they were caught for display. A failure mid-pull must stop the
-        # run rather than be swallowed into a partial result that looks
-        # complete.
+        # Update before classify. A 403 for quota exhaustion still carries the
+        # rate limit headers, and they are precisely what is needed to know how
+        # long to wait — so they must be captured before the exception is
+        # raised and unwinds the stack.
+        if rate_limit is not None:
+            rate_limit.update(response)
+
+        # Exceptions propagate here, unlike in probe where they were caught for
+        # display. A failure mid-pull must stop the run rather than be
+        # swallowed into a partial result that looks complete.
         classify(response)
 
         records = response.json()
         if not isinstance(records, list):
             # A 200 with a non-list body from a list endpoint should not
-            # happen. Raising rather than coercing, because silently treating
-            # an unexpected shape as "no records" is precisely the silent
-            # under-fetch this module exists to prevent.
+            # happen. Raising rather than coercing, because treating an
+            # unexpected shape as "no records" is the silent under-fetch this
+            # module exists to prevent.
             raise TypeError(
                 f"expected a JSON array from {response.url}, got {type(records).__name__}"
             )
@@ -164,13 +175,13 @@ def iter_pages(
         # Termination. The absence of rel="next" is the ONLY correct signal
         # that a result set is exhausted.
         #
-        # The tempting alternatives are all wrong in ways that are hard to
-        # detect. Stopping when a page returns fewer than per_page records
-        # fails when the total is an exact multiple of the page size. Stopping
-        # when a page is empty costs an extra request and still relies on the
-        # server behaving as expected. Counting up to rel="last" breaks when
-        # the result set changes size mid-pull, which on an active repository
-        # it does.
+        # The alternatives are all wrong in ways that are hard to detect.
+        # Stopping when a page returns fewer than per_page records fails when
+        # the total is an exact multiple of the page size. Stopping on an empty
+        # page costs an extra request and still trusts the server to behave.
+        # Counting up to rel="last" breaks when the result set changes size
+        # mid-pull, which on an active repository it does — the observed count
+        # moved from 41 pages to 42 between two runs minutes apart.
         next_url = links.get("next")
         if not next_url:
             log.debug("no rel=next on page %d; result set exhausted", page_number)
@@ -179,8 +190,7 @@ def iter_pages(
         if max_pages is not None and page_number >= max_pages:
             # Stopping early is a legitimate development mode, but it produces
             # an incomplete result set that looks exactly like a complete one.
-            # A warning, not a debug line, because the whole point of this tool
-            # is that a partial pull is never silent.
+            # A warning, not a debug line.
             log.warning(
                 "stopping at page %d because MAX_PAGES=%d; "
                 "a next page was available, so this result set is INCOMPLETE",
@@ -194,4 +204,4 @@ def iter_pages(
         # parameters, embedded by GitHub. This one line is the difference
         # between following the server's cursor and reconstructing it.
         next_params = None
-        page_number = (_page_number_from_url(next_url) or page_number + 1)
+        page_number = _page_number_from_url(next_url) or page_number + 1

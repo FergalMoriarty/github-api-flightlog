@@ -117,3 +117,23 @@ a user who insists the repository exists is often right.
 
 Caught by triggering each failure and reading the response rather than writing
 the exception classes from the HTTP specification.
+
+## 2026-09-10 — A test that monkey-patched a module constant proved nothing
+
+To demonstrate the rate limit wait without exhausting a real quota, the
+assistant wrote a test that reassigned `flightlog.ratelimit.DEFAULT_THRESHOLD`
+at runtime and then called the pagination loop.
+
+The test ran clean and the wait never fired. `iter_pages` calls
+`wait_if_needed()` with no argument, so the threshold comes from the default
+parameter value — and Python evaluates default arguments once, when the
+function is defined. Rebinding the module attribute afterwards changes the
+module attribute and nothing else. `MAX_WAIT_SECONDS`, read inside the function
+body, was patched successfully; `DEFAULT_THRESHOLD`, captured as a default, was
+not.
+
+The failure mode is the one this whole project is about: no error, no warning,
+a test that passed and demonstrated nothing. Fixed by passing the threshold
+explicitly as an argument.
+
+Caught by noticing that `waits=0` after a run that should have waited.

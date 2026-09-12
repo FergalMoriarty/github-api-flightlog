@@ -15,6 +15,7 @@ import requests
 from .config import Config
 from .pagination import iter_pages
 from .probe import TIMEOUT, build_commits_url, build_headers
+from .ratelimit import RateLimitState
 
 log = logging.getLogger(__name__)
 
@@ -23,10 +24,15 @@ def fetch_commits(config: Config) -> int:
     """Page through commits and print the run accounting."""
     started = time.monotonic()
 
+    # One state object for the whole run. When increment 9 adds pull requests,
+    # the same object is passed to both — commits and PRs bill the same `core`
+    # quota, so two separate views would each see half the spend and neither
+    # would wait when it should.
+    rate_limit = RateLimitState()
+
     total_records = 0
     pages = 0
     expected_pages: int | None = None
-    last_remaining: int | None = None
 
     with requests.Session() as session:
         for page in iter_pages(
@@ -36,18 +42,17 @@ def fetch_commits(config: Config) -> int:
             params={"since": config.since_iso, "per_page": config.per_page},
             max_pages=config.max_pages,
             timeout=TIMEOUT,
+            rate_limit=rate_limit,
         ):
             pages += 1
             total_records += len(page.records)
-            last_remaining = page.rate_limit_remaining
 
             # rel="last" appears on the first response and names the final page
-            # number. Capturing it lets the summary state pages fetched against
-            # pages available, which is what turns "41 pages" into "41 of 41".
+            # number, which is what turns "42 pages" into "42 of 42".
             if expected_pages is None and "last" in page.links:
-                match = page.links["last"].split("page=")[-1].split("&")[0]
-                if match.isdigit():
-                    expected_pages = int(match)
+                tail = page.links["last"].split("page=")[-1].split("&")[0]
+                if tail.isdigit():
+                    expected_pages = int(tail)
 
             print(
                 f"  page {page.page_number:>3}  "
@@ -69,7 +74,12 @@ def fetch_commits(config: Config) -> int:
         print(f"  Pages available  : {expected_pages}  ({status})")
     print(f"  Records          : {total_records}")
     print(f"  Requests used    : {pages}")
-    print(f"  Quota remaining  : {last_remaining}")
+    print(f"  Quota            : {rate_limit.remaining} of {rate_limit.limit} remaining")
+    if rate_limit.reset_datetime:
+        print(f"  Quota resets     : {rate_limit.reset_datetime.isoformat()}")
+    # Printed even when zero. "Waited 0s" is information — it says the run was
+    # not throttled, which is different from the report having nothing to say.
+    print(f"  Rate limit waits : {rate_limit.waits} ({rate_limit.seconds_waited:.0f}s total)")
     print(f"  Elapsed          : {elapsed:.1f}s")
 
     if config.max_pages is not None and expected_pages and pages < expected_pages:

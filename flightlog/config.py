@@ -67,6 +67,11 @@ class Config:
     max_pages: int | None  # None means "no cap, fetch to exhaustion"
     since_months: int
     log_level: str
+    pg_host: str
+    pg_port: int
+    pg_database: str
+    pg_user: str
+    pg_password: str
 
     # Everything below is derived. These are properties rather than stored
     # fields so there is one source of truth: `repo` is the setting, `owner`
@@ -143,6 +148,19 @@ class Config:
         if not self.token:
             return "(none — unauthenticated)"
         return f"{self.token[:4]}…{self.token[-4:]} ({len(self.token)} chars)"
+
+    @property
+    def pg_dsn(self) -> str:
+        """Connection string for psycopg2.
+
+        Assembled here rather than configured as one string, so each part can be
+        overridden independently and so the password never has to appear in a
+        setting that might be logged whole.
+        """
+        return (
+            f"host={self.pg_host} port={self.pg_port} dbname={self.pg_database} "
+            f"user={self.pg_user} password={self.pg_password}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -253,6 +271,9 @@ def load_config(env_path: Path | None = None) -> Config:
     if log_level not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
         raise ConfigError(f"LOG_LEVEL is not a valid level: {log_level!r}")
 
+    pg_port = _env_int("POSTGRES_PORT", 5434)
+    if pg_port is None or not 1 <= pg_port <= 65535:
+        raise ConfigError(f"POSTGRES_PORT must be a valid port number, got {pg_port}")
     # Construct only after every value has passed. A Config object therefore
     # always represents a valid configuration — nothing downstream needs to
     # re-check, and nothing downstream should.
@@ -269,4 +290,9 @@ def load_config(env_path: Path | None = None) -> Config:
         max_pages=max_pages,
         since_months=since_months,
         log_level=log_level,
+        pg_host=_env_str("POSTGRES_HOST", "localhost"),
+        pg_port=pg_port,
+        pg_database=_env_str("POSTGRES_DB", "flightlog"),
+        pg_user=_env_str("POSTGRES_USER", "flightlog"),
+        pg_password=_env_str("POSTGRES_PASSWORD", "flightlog"),
     )

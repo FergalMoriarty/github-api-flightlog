@@ -172,3 +172,24 @@ and an empty resources set is never complete.
 
 Caught by triggering a 404 mid-run and reading the accounting afterwards,
 rather than by testing only the paths that were expected to work.
+
+## 2026-09-13 — The null `author` finally appeared: 1 record in 4,185
+
+An earlier entry recorded that the assistant predicted null `author` values
+would be visible on the first page of results, and that checking all 100
+records found none. The conclusion drawn then was that nullability must come
+from the API's declared schema rather than from a sample.
+
+A full 42-page pull confirmed it. One record in 4,185 has a null top-level
+`author`: a dbt Labs developer committing from `vadim.rybak@dbtlabs.com`, an
+address GitHub cannot match to a user account. A real contributor with a
+corporate email, not a bot or imported history.
+
+0.02%. A validator built by sampling — even a generous sample of 500 records —
+would have concluded the field is always populated. The failure would have
+arrived 4,185 records into a production run, as a KeyError on
+`record["author"]["login"]`, after a partial write.
+
+The run instead validated the record (null is permitted by the schema), loaded
+it (the column is nullable), and reported the rate. The design decision
+survived contact with the data it was made about.

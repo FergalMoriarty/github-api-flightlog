@@ -21,6 +21,7 @@ from .pagination import iter_pages
 from .probe import TIMEOUT, build_commits_url, build_headers
 from .stats import RunStats
 from .schema import COMMIT_SCHEMA, validate_record
+from .load import LoadStats, load_commits, table_counts
 
 log = logging.getLogger(__name__)
 
@@ -29,13 +30,23 @@ log = logging.getLogger(__name__)
 TOKEN_EXPIRY_WARNING_DAYS = 14
 
 
-def fetch_commits(config: Config) -> int:
-    """Page through commits and print the run accounting."""
+def fetch_commits(config: Config, load: bool = False) -> int:
+    """Page through commits, validate, and optionally load to Postgres."""
     # One RunStats for the whole run. When increment 9 adds pull requests, the
     # same object is passed to both — commits and PRs bill the same `core`
     # quota, so two separate views would each see half the spend and neither
     # would wait when it should.
     stats = RunStats()
+    load_stats = LoadStats()
+
+    # Accumulated rather than loaded page by page. A page-at-a-time load would
+    # use less memory, and would also mean a run that fails on page 30 leaves
+    # 29 pages committed — a partially loaded table that looks complete to
+    # anything querying it. Loading once at the end makes the write all or
+    # nothing. 4,173 records is a few megabytes; the trade only reverses at a
+    # scale this tool does not claim to handle, and that is noted as a
+    # limitation rather than pretended away.
+    valid_records: list = []
 
     with requests.Session() as session:
         for page in iter_pages(
@@ -48,17 +59,18 @@ def fetch_commits(config: Config) -> int:
             timeout=TIMEOUT,
             stats=stats,
         ):
-            # Validate as each page arrives rather than after the whole pull.
-            # A run that fetches 42 pages and then discovers every record is
-            # malformed has spent 42 requests to learn something the first page
-            # would have told it — and with a Postgres load downstream, would
-            # have written 4,000 bad rows before noticing.
+            # Validate as each page arrives rather than after the whole pull. A
+            # run that fetches 42 pages and then discovers every record is
+            # malformed has spent 42 requests to learn what the first page would
+            # have told it.
             rejected_on_page = 0
             for record in page.records:
-                if validate_record(
-                    record, COMMIT_SCHEMA, stats=stats.validation
-                ):
+                if validate_record(record, COMMIT_SCHEMA, stats=stats.validation):
                     rejected_on_page += 1
+                else:
+                    # Only validated records are kept. This is what makes the
+                    # validation worth having rather than decorative.
+                    valid_records.append(record)
 
             suffix = f"  {rejected_on_page} REJECTED" if rejected_on_page else ""
             print(
@@ -67,16 +79,22 @@ def fetch_commits(config: Config) -> int:
                 f"remaining {page.rate_limit_remaining}  "
                 f"{page.request_id}{suffix}"
             )
-    print_summary(config, stats)
+
+    if load:
+        print()
+        print(f"  Loading {len(valid_records)} records to Postgres...")
+        load_commits(config, valid_records, load_stats)
+
+    print_summary(config, stats, load_stats if load else None)
 
     # Exit 1 when the pull was incomplete. A scheduler calling this needs to
     # know that a run which fetched 300 of 4,172 records did not do its job,
-    # and exit 0 would tell it the opposite. This is the single most important
-    # line in the function.
+    # and exit 0 would tell it the opposite.
     return 0 if stats.complete else 1
 
-
-def print_summary(config: Config, stats: RunStats) -> None:
+def print_summary(
+    config: Config, stats: RunStats, load_stats: LoadStats | None = None
+) -> None:
     """Print the run accounting.
 
     A placeholder for the diagnostic report at increment 10, which will have a
@@ -184,6 +202,22 @@ def print_summary(config: Config, stats: RunStats) -> None:
     if days is not None and days <= TOKEN_EXPIRY_WARNING_DAYS:
         print()
         print(f"  WARNING: token expires in {days} days ({stats.token_expires_at})")
+
+    if load_stats is not None:
+        counts = table_counts(config)
+        print()
+        print("  Postgres")
+        print(f"    Rows submitted : {load_stats.rows_submitted} in {load_stats.batches} batches")
+        print(f"    Rows affected  : {load_stats.rows_affected}")
+        # The resulting table state, not just what this run did. "Loaded 4,173,
+        # table holds 4,173" and "loaded 4,173, table holds 12,006" describe
+        # different situations, and only the second tells you the load was
+        # additive.
+        print(f"    Table total    : {counts['total']} for this repo")
+        print(f"    Distinct authors: {counts['distinct_authors']}")
+        print(f"    Unmatched users : {counts['unmatched_authors']}")
+        if counts["earliest"]:
+            print(f"    Date range     : {counts['earliest']:%Y-%m-%d} to {counts['latest']:%Y-%m-%d}")
 
     if not stats.complete:
         print()

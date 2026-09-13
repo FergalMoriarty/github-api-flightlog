@@ -56,7 +56,15 @@ def cmd_check(config: Config) -> int:
     print(f"  Page cap      : {config.max_pages or 'none (fetch to exhaustion)'}")
     print(f"  Since         : {config.since_iso}")
     print(f"  Log level     : {config.log_level}")
-
+    print()
+    print("  Database")
+    print(f"    Host        : {config.pg_host}:{config.pg_port}")
+    print(f"    Database    : {config.pg_database}")
+    print(f"    User        : {config.pg_user}")
+    # Password deliberately not shown, redacted or otherwise. Nothing about a
+    # local development password is worth printing, and a habit of displaying
+    # credentials in a diagnostic command is worth not forming.
+    
     # Unauthenticated is a legitimate mode, not an error — hence a note rather
     # than a warning, and exit 0. But it changes the rate limit by a factor of
     # 80, so it should never be a silent condition.
@@ -93,7 +101,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--repo",
         help="override TARGET_REPO for this call, e.g. dbt-labs/no-such-repo",
     )
-    subparsers.add_parser("fetch", help="page through all commits and report counts")
+    fetch_parser = subparsers.add_parser(
+        "fetch", help="page through all commits and report counts"
+    )
+    fetch_parser.add_argument(
+        "--load",
+        action="store_true",
+        help="load validated records into PostgreSQL",
+    )
+
     return parser
 
 
@@ -140,7 +156,7 @@ def main(argv: list[str] | None = None) -> int:
         return probe(config, repo_override=args.repo)
 
     if args.command == "fetch":
-        return fetch_commits(config)
+            return fetch_commits(config, load=args.load)
 
     # Unreachable while every subcommand has a branch above and required=True
     # is set. Kept as a defensive default so that adding a subparser and

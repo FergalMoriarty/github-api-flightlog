@@ -20,6 +20,7 @@ from .config import Config
 from .pagination import iter_pages
 from .probe import TIMEOUT, build_commits_url, build_headers
 from .stats import RunStats
+from .schema import COMMIT_SCHEMA, validate_record
 
 log = logging.getLogger(__name__)
 
@@ -47,13 +48,25 @@ def fetch_commits(config: Config) -> int:
             timeout=TIMEOUT,
             stats=stats,
         ):
+            # Validate as each page arrives rather than after the whole pull.
+            # A run that fetches 42 pages and then discovers every record is
+            # malformed has spent 42 requests to learn something the first page
+            # would have told it — and with a Postgres load downstream, would
+            # have written 4,000 bad rows before noticing.
+            rejected_on_page = 0
+            for record in page.records:
+                if validate_record(
+                    record, COMMIT_SCHEMA, stats=stats.validation
+                ):
+                    rejected_on_page += 1
+
+            suffix = f"  {rejected_on_page} REJECTED" if rejected_on_page else ""
             print(
                 f"  page {page.page_number:>3}  "
                 f"{len(page.records):>3} records  "
                 f"remaining {page.rate_limit_remaining}  "
-                f"{page.request_id}"
+                f"{page.request_id}{suffix}"
             )
-
     print_summary(config, stats)
 
     # Exit 1 when the pull was incomplete. A scheduler calling this needs to
@@ -96,6 +109,37 @@ def print_summary(config: Config, stats: RunStats) -> None:
     # billed three requests against the quota, and reporting the page count
     # would be quietly wrong in exactly the case the report exists to explain.
     print(f"  Requests made    : {stats.retries.attempts}")
+    # Validation counts, printed even when nothing failed. "300 checked, 300
+    # accepted" confirms validation ran; silence would be indistinguishable
+    # from validation not running at all.
+    v = stats.validation
+    print(f"  Records checked  : {v.records_checked} ({v.records_accepted} accepted)")
+
+    if v.records_rejected:
+        print(f"  Records rejected : {v.records_rejected}")
+        # Grouped by field and reason rather than listed per record. Four
+        # thousand records failing the same check is one problem, and printing
+        # it four thousand times buries everything else.
+        grouped: dict[tuple[str, str], list] = {}
+        for r in v.rejections:
+            grouped.setdefault((r.field_path, r.reason), []).append(r)
+        for (path, reason), group in sorted(grouped.items()):
+            print(f"    {path}: {reason}  [{len(group)} records]")
+            # One worked example per group. "expected str, got dict" is less
+            # use than seeing the dict — the brief's own example is a nullable
+            # field arriving as an object, which is only diagnosable if the
+            # object is visible.
+            sample = group[0]
+            print(f"      e.g. {sample.identity}: {sample.value_excerpt}")
+
+    # Null rates for every nullable field, reported whether or not anything
+    # failed. The rate is the signal: a field normally null 2% of the time and
+    # suddenly null 40% of the time indicates an upstream change, and no
+    # individual record failed validation to reveal it.
+    if v.null_counts:
+        print("  Null fields      :")
+        for path, count in sorted(v.null_counts.items()):
+            print(f"    {path}: {count} of {v.records_checked} ({v.null_rate(path):.1%})")
 
     if stats.retries.retries:
         # Per-cause rather than a bare total: repeated 502s are GitHub's

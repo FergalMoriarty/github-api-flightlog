@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 
 from .ratelimit import RateLimitState
 from .retry import RetryStats
+from .schema import ValidationStats
 
 
 @dataclass
@@ -115,6 +116,11 @@ class RunStats:
 
     rate_limit: RateLimitState = field(default_factory=RateLimitState)
     retries: RetryStats = field(default_factory=RetryStats)
+    # Validation outcomes for the whole run. One set rather than one per
+    # resource: commits and pull requests have different schemas, but the
+    # report wants a single "how many records were rejected and why", and the
+    # rejections themselves name the field that failed.
+    validation: ValidationStats = field(default_factory=ValidationStats)
 
     resources: dict[str, ResourceStats] = field(default_factory=dict)
     failures: list[FailedRequest] = field(default_factory=list)

@@ -80,6 +80,15 @@ def build_commits_url(config: Config) -> str:
     """
     return f"{config.api_url}/repos/{config.owner}/{config.repo_name}/commits"
 
+def build_pulls_url(config: Config) -> str:
+    """Construct the pull requests endpoint URL.
+
+    Same shape as the commits URL, different path segment. Both are list
+    endpoints returning a JSON array with a Link header, which is why the
+    pagination code needs no knowledge of either.
+    """
+    return f"{config.api_url}/repos/{config.owner}/{config.repo_name}/pulls"
+
 
 def probe(config: Config, repo_override: str | None = None) -> int:
     """Make one request and print everything about the response.

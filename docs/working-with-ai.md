@@ -193,3 +193,33 @@ arrived 4,185 records into a production run, as a KeyError on
 The run instead validated the record (null is permitted by the schema), loaded
 it (the column is nullable), and reported the rate. The design decision
 survived contact with the data it was made about.
+
+## 2026-09-13 — Client-side date filtering without an early exit fetched 4x the data needed
+
+The pull requests endpoint has no `since` parameter, unlike the commits
+endpoint. The assistant's approach was to sort by `updated` descending and
+discard records older than the window on arrival, which is correct as far as
+it goes and omitted the consequence of the sort order.
+
+Measured against `dbt-labs/dbt-core` with a one-year window: the first run
+fetched all 67 pages, 6,652 records, and kept 1,444. From page 16 onward every
+single record on every page was outside the window and discarded on arrival.
+Descending sort means that was knowable at page 16 — nothing later could
+qualify.
+
+52 wasted requests and roughly three minutes, for data thrown away as it
+arrived.
+
+Fixed by breaking when an entire page falls outside the window. 67 pages became
+16, 240 seconds became 29, and the loaded records are identical: same 1,444
+rows, same open/merged/unmerged counts, same 4.9-hour median time to merge.
+
+Two things the fix had to get right. The break is correct ONLY because of
+`direction=desc`; removing the sort makes it wrong rather than merely
+unhelpful, and that constraint is stated in the code. And the completeness
+check had to be told the window was exhausted — otherwise it compares 16 pages
+fetched against `rel="last"` of 67 and reports a deliberate, correct early exit
+as a failed run.
+
+Caught by reading the per-page output rather than only the summary. The summary
+said "67 of 67, complete, exit 0" and was entirely accurate.

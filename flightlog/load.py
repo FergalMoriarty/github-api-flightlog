@@ -68,7 +68,41 @@ ON CONFLICT (sha) DO UPDATE SET
     html_url       = EXCLUDED.html_url,
     ingested_at    = now()
 """
-
+# Keyed on id, not number. `number` is unique per repository only, so a second
+# repository would collide on it — and because the composite unique constraint
+# on (repo, number) exists, that collision would be an error rather than silent
+# corruption. Keying on the globally unique id avoids the question entirely.
+#
+# DO UPDATE rather than DO NOTHING for a stronger reason than with commits: a
+# PR record genuinely changes. An open PR gets merged, retitled, taken out of
+# draft. DO NOTHING would freeze every PR in the state it held when first seen,
+# which for an actively developed repository means the table is wrong within
+# hours.
+_PR_UPSERT_SQL = """
+INSERT INTO pull_requests (
+    id, number, repo,
+    title, state, draft,
+    user_login, user_id,
+    created_at, updated_at, closed_at, merged_at,
+    base_ref, head_ref, html_url
+) VALUES %s
+ON CONFLICT (id) DO UPDATE SET
+    number      = EXCLUDED.number,
+    repo        = EXCLUDED.repo,
+    title       = EXCLUDED.title,
+    state       = EXCLUDED.state,
+    draft       = EXCLUDED.draft,
+    user_login  = EXCLUDED.user_login,
+    user_id     = EXCLUDED.user_id,
+    created_at  = EXCLUDED.created_at,
+    updated_at  = EXCLUDED.updated_at,
+    closed_at   = EXCLUDED.closed_at,
+    merged_at   = EXCLUDED.merged_at,
+    base_ref    = EXCLUDED.base_ref,
+    head_ref    = EXCLUDED.head_ref,
+    html_url    = EXCLUDED.html_url,
+    ingested_at = now()
+"""
 
 @dataclass
 class LoadStats:
@@ -127,6 +161,42 @@ def _commit_row(record: dict[str, Any], repo: str) -> tuple:
         record["html_url"],
     )
 
+def _pr_row(record: dict[str, Any], repo: str) -> tuple:
+    """Flatten one validated pull request record into a row tuple.
+
+    Column order must match the INSERT above. Most of these columns are TEXT,
+    so a mismatch would load values into the wrong columns and Postgres would
+    accept it without complaint — which is why the SQL and this function sit
+    together rather than being separated for tidiness.
+    """
+    # `or {}` rather than .get with a default, because the key is present with
+    # a value of None when the account has been deleted. A plain
+    # record.get("user", {}) returns None in that case, not the default, and
+    # the next line raises AttributeError. The same guard as the commit author.
+    user = record.get("user") or {}
+    base = record.get("base") or {}
+    head = record.get("head") or {}
+
+    return (
+        record["id"],
+        record["number"],
+        repo,
+        record["title"],
+        record["state"],
+        record.get("draft"),
+        user.get("login"),
+        user.get("id"),
+        # ISO 8601 strings passed through for Postgres to parse into
+        # timestamptz. The three nullable ones are None for an open PR, and
+        # for one closed without merging.
+        record["created_at"],
+        record["updated_at"],
+        record.get("closed_at"),
+        record.get("merged_at"),
+        base["ref"],
+        head.get("ref"),
+        record["html_url"],
+    )
 
 def load_commits(
     config: Config,
@@ -176,7 +246,82 @@ def load_commits(
 
     return stats
 
+def load_pull_requests(
+    config: Config,
+    records: Iterable[dict[str, Any]],
+    stats: LoadStats | None = None,
+) -> LoadStats:
+    """Upsert validated pull request records.
 
+    Structurally identical to load_commits, deliberately not abstracted into a
+    shared function. The two differ in their SQL, their row builder and their
+    conflict target, which is most of what either function does — a common
+    implementation would be a thin wrapper around three parameters that
+    together constitute the whole body. Two readable functions beat one
+    parameterised one at this size.
+    """
+    stats = stats if stats is not None else LoadStats()
+    rows = [_pr_row(r, config.repo) for r in records]
+
+    if not rows:
+        log.info("no pull requests to load")
+        return stats
+
+    connection = psycopg2.connect(config.pg_dsn)
+    try:
+        with connection:
+            with connection.cursor() as cursor:
+                for start in range(0, len(rows), BATCH_SIZE):
+                    batch = rows[start : start + BATCH_SIZE]
+                    execute_values(cursor, _PR_UPSERT_SQL, batch, page_size=BATCH_SIZE)
+                    stats.batches += 1
+                    stats.rows_affected += cursor.rowcount
+                    log.debug("loaded PR batch %d (%d rows)", stats.batches, len(batch))
+        stats.rows_submitted += len(rows)
+    finally:
+        connection.close()
+
+    return stats
+
+
+def pr_table_counts(config: Config) -> dict[str, Any]:
+    """Summary of the pull_requests table, for the report."""
+    connection = psycopg2.connect(config.pg_dsn)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    count(*),
+                    count(*) FILTER (WHERE state = 'open'),
+                    count(*) FILTER (WHERE merged_at IS NOT NULL),
+                    -- Closed without merging. The state column alone cannot
+                    -- express this: a merged PR and an abandoned one are both
+                    -- 'closed', and only merged_at tells them apart.
+                    count(*) FILTER (WHERE state = 'closed' AND merged_at IS NULL),
+                    -- Median time to merge, in hours. Median rather than mean
+                    -- because one PR left open for eight months would drag an
+                    -- average somewhere useless.
+                    percentile_cont(0.5) WITHIN GROUP (
+                        ORDER BY EXTRACT(EPOCH FROM (merged_at - created_at)) / 3600
+                    ) FILTER (WHERE merged_at IS NOT NULL)
+                FROM pull_requests
+                WHERE repo = %s
+                """,
+                (config.repo,),
+            )
+            total, open_count, merged, closed_unmerged, median_hours = cursor.fetchone()
+    finally:
+        connection.close()
+
+    return {
+        "total": total,
+        "open": open_count,
+        "merged": merged,
+        "closed_unmerged": closed_unmerged,
+        "median_merge_hours": median_hours,
+    }
+    
 def table_counts(config: Config) -> dict[str, Any]:
     """Summary of what is in the table, for the report.
 

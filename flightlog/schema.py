@@ -137,6 +137,106 @@ COMMIT_SCHEMA: tuple[Field, ...] = (
     ),
 )
 
+# The pull request record fields this tool depends on.
+#
+# A PR record is considerably larger than a commit record — around a hundred
+# fields, including fully nested `head` and `base` objects each carrying a
+# complete repository representation. As with commits, only what the loader
+# uses is validated: rejecting a record over a field nothing reads would be
+# noise dressed up as rigour.
+PULL_REQUEST_SCHEMA: tuple[Field, ...] = (
+    Field(
+        "id",
+        types=(int,),
+        note="GitHub's globally unique PR id; the primary key",
+    ),
+    # Distinct from id, and the distinction matters. `number` is what people
+    # call the PR — "#16245" — and it is unique only within a repository, so
+    # ingesting a second repo would collide on it. `id` is unique everywhere.
+    Field(
+        "number",
+        types=(int,),
+        note="PR number, unique per repository only",
+    ),
+    Field(
+        "title",
+        types=(str,),
+        note="PR title",
+    ),
+    # "open" or "closed". There is no "merged" state: a merged PR is closed
+    # with merged_at set. Treating state alone as the merge indicator would
+    # count every abandoned PR as merged.
+    Field(
+        "state",
+        types=(str,),
+        note="open or closed; merged is closed with merged_at set",
+    ),
+    Field(
+        "draft",
+        types=(bool,),
+        required=False,
+        note="whether the PR is a draft",
+    ),
+    # Nullable for the same reason the commit author is: GitHub returns null
+    # when the account has been deleted. Rarer here — opening a PR requires an
+    # account — but the schema declares it nullable and that is what governs,
+    # not how often it has been observed. The commits case proved the point:
+    # one null in 4,185 records, invisible in any reasonable sample.
+    Field(
+        "user",
+        types=(dict,),
+        nullable=True,
+        note="PR author; null when the account has been deleted",
+    ),
+    Field(
+        "created_at",
+        types=(str,),
+        note="ISO 8601 timestamp",
+    ),
+    Field(
+        "updated_at",
+        types=(str,),
+        note="ISO 8601 timestamp",
+    ),
+    # Null while the PR is open. Not an error — it is the normal state of an
+    # open PR, and the column is nullable to match.
+    Field(
+        "closed_at",
+        types=(str,),
+        nullable=True,
+        note="null while the PR is open",
+    ),
+    # Null for any PR that is open, and for any that was closed without
+    # merging. The presence of this field is the only reliable merge
+    # indicator.
+    Field(
+        "merged_at",
+        types=(str,),
+        nullable=True,
+        note="null unless merged; the only reliable merge indicator",
+    ),
+    # The branch being merged into. Always present.
+    Field(
+        "base.ref",
+        types=(str,),
+        note="target branch",
+    ),
+    # The source branch. Nullable in effect: when a PR comes from a fork whose
+    # repository has since been deleted, GitHub nulls the `head.repo` object,
+    # and `head.ref` can become unreliable. required=False rather than
+    # nullable, so its absence is counted rather than fatal.
+    Field(
+        "head.ref",
+        types=(str,),
+        required=False,
+        note="source branch; unreliable when a fork has been deleted",
+    ),
+    Field(
+        "html_url",
+        types=(str,),
+        note="link back to the PR on github.com",
+    ),
+)
 # Sentinel distinguishing "the path does not exist" from "the value is None".
 # A plain None return could not tell those apart, and they are exactly the two
 # cases this module exists to separate.

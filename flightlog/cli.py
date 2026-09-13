@@ -17,7 +17,7 @@ import sys
 from .config import Config, ConfigError, load_config
 from .config import Config, ConfigError, load_config
 from .probe import probe
-from .fetch import fetch_commits
+from .fetch import fetch_commits, fetch_pull_requests
 
 # Module-level logger named after the module ("flightlog.cli"). Using
 # logging.getLogger(__name__) throughout rather than the root logger means log
@@ -109,6 +109,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="load validated records into PostgreSQL",
     )
+    pulls_parser = subparsers.add_parser(
+        "pulls", help="page through pull requests and report counts"
+    )
+    pulls_parser.add_argument(
+        "--load",
+        action="store_true",
+        help="load validated records into PostgreSQL",
+    )
 
     return parser
 
@@ -157,6 +165,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "fetch":
             return fetch_commits(config, load=args.load)
+    
+    if args.command == "pulls":
+        return fetch_pull_requests(config, load=args.load)
 
     # Unreachable while every subcommand has a branch above and required=True
     # is set. Kept as a defensive default so that adding a subparser and

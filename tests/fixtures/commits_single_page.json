@@ -1,0 +1,281 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Date": "Sun, 13 Sep 2026 20:06:50 GMT",
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "private, max-age=60, s-maxage=60",
+    "Vary": "Accept, Authorization, Cookie, X-GitHub-OTP,Accept-Encoding, Accept, X-Requested-With",
+    "ETag": "W/\"b404e8219f5a3193f9fc1205215340163e1f681824f87b39a594019a317f1ee9\"",
+    "Last-Modified": "Tue, 08 Sep 2026 03:37:18 GMT",
+    "github-authentication-token-expiration": "2026-10-03 20:59:49 UTC",
+    "X-GitHub-Media-Type": "github.v3; format=json",
+    "x-accepted-github-permissions": "contents=read",
+    "x-github-api-version-selected": "2022-11-28",
+    "Access-Control-Expose-Headers": "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning",
+    "Access-Control-Allow-Origin": "*",
+    "Strict-Transport-Security": "max-age=31536000; includeSubdomains; preload",
+    "X-Frame-Options": "deny",
+    "X-Content-Type-Options": "nosniff",
+    "X-XSS-Protection": "0",
+    "Referrer-Policy": "origin-when-cross-origin, strict-origin-when-cross-origin",
+    "Content-Security-Policy": "default-src 'none'",
+    "Content-Encoding": "gzip",
+    "Transfer-Encoding": "chunked",
+    "Server": "github.com",
+    "X-RateLimit-Limit": "5000",
+    "X-RateLimit-Remaining": "4901",
+    "X-RateLimit-Reset": "1789332283",
+    "X-RateLimit-Used": "99",
+    "X-RateLimit-Resource": "core",
+    "X-GitHub-Request-Id": "E05C:33E03A:1FED0A1:2599A51:6AA7025A",
+    "x-github-edge-region": "uksouth"
+  },
+  "body": [
+    {
+      "sha": "11faa04380572c7e05bffb694c66dddbc0251edf",
+      "node_id": "C_kwDOAzEXQ9oAKDExZmFhMDQzODA1NzJjN2UwNWJmZmI2OTRjNjZkZGRiYzAyNTFlZGY",
+      "commit": {
+        "author": {
+          "name": "Tauhid Anjum",
+          "email": "tauhid.anjum@dbtlabs.com",
+          "date": "2026-09-08T03:06:43Z"
+        },
+        "committer": {
+          "name": "fa-assistant",
+          "email": "bots+fa-assistant@fishtownanalytics.com",
+          "date": "2026-09-08T03:37:18Z"
+        },
+        "message": "Revert \"Rename dbt-core to dbt-oss in repo-facing docs\"\n\nThis reverts commit a3e4e02dbdc11770546323f8e4379d534332c72e.\n\nGitOrigin-RevId: 223a31cb11236cfef102c50961dfa8e30105dc39",
+        "tree": {
+          "sha": "4be8eff194017f13f9462fc4c6aeebb744e2d57c",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/git/trees/4be8eff194017f13f9462fc4c6aeebb744e2d57c"
+        },
+        "url": "https://api.github.com/repos/dbt-labs/dbt/git/commits/11faa04380572c7e05bffb694c66dddbc0251edf",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unverified_email",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCgAdFiEEdQw6hSNZ/n3fzX63r9xgsZtTDTAFAmqfgu4ACgkQr9xgsZtT\nDTAVLA/+Lc95PcMVQJR7+BHuxkW8nxLtS74Ie0dYTcFEbwhjd4fyq2wiLqkTclOq\nV8GyCP9K929Mnqr61L6nMWgTERL8+FNs2jGScEbLCo40vlnfKtUngn6qj16HOC9S\nCx6q1AFgcvpEhsMfejw93G5k5k3/ZsaIQazzZ7vyiplaCCPAwDyyPBrwpdrhhnhL\nh7YtjeOjcHzBbFtJreiVCLC85MEaCezXbbW7NoXRzfG1O7jJNxBKznEPWX5NhaHa\nsC/BvLCIStd7TTL2uDzaYXlUMZX3Xcn/bI4uGpcecqWn85W8OFjfzi2QFQZpDNCr\nJy84q6hLQV3dDiRyMvX+tScLUKSobazcAWEU2bSwRM8Ynyfb5IQRBJ++stgKhZou\nnmvBy1j4jT5q7sk63s4i8TQznqu/jNFvY07ZqgfhAoi8jOVLrQlc1sOz7alkoUFK\n1WtoX2+A/egzFMtkWPdenid/fbwE6cS9OuieCRumiNbYeecYpoJkVCzrsFbZ2RF4\ng81n8HZm6wt2yGvY08udWKb6LidMJdq8e6j/ajl2ZFvffd2DDEDMaJ0IyjO0ENBx\nqPQD8DnwTYxoDTGfEWs0DWHkokwmsyJcvct5kmSbBceNjJpSwhFCgdalIqgz+TLu\ns6yOtmDZuXDyhbmmLhivj0AFJdVz2n6q0+IS11k4qMjjhf2p9/g=\n=BCgT\n-----END PGP SIGNATURE-----",
+          "payload": "tree 4be8eff194017f13f9462fc4c6aeebb744e2d57c\nparent ca815fb3326f6313bb77e5d8acdcd558eef326f8\nauthor Tauhid Anjum <tauhid.anjum@dbtlabs.com> 1788836803 +0000\ncommitter fa-assistant <bots+fa-assistant@fishtownanalytics.com> 1788838638 +0000\n\nRevert \"Rename dbt-core to dbt-oss in repo-facing docs\"\n\nThis reverts commit a3e4e02dbdc11770546323f8e4379d534332c72e.\n\nGitOrigin-RevId: 223a31cb11236cfef102c50961dfa8e30105dc39\n",
+          "verified_at": null
+        }
+      },
+      "url": "https://api.github.com/repos/dbt-labs/dbt/commits/11faa04380572c7e05bffb694c66dddbc0251edf",
+      "html_url": "https://github.com/dbt-labs/dbt/commit/11faa04380572c7e05bffb694c66dddbc0251edf",
+      "comments_url": "https://api.github.com/repos/dbt-labs/dbt/commits/11faa04380572c7e05bffb694c66dddbc0251edf/comments",
+      "author": {
+        "login": "tauhid621",
+        "id": 17411453,
+        "node_id": "MDQ6VXNlcjE3NDExNDUz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/17411453?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/tauhid621",
+        "html_url": "https://github.com/tauhid621",
+        "followers_url": "https://api.github.com/users/tauhid621/followers",
+        "following_url": "https://api.github.com/users/tauhid621/following{/other_user}",
+        "gists_url": "https://api.github.com/users/tauhid621/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/tauhid621/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/tauhid621/subscriptions",
+        "organizations_url": "https://api.github.com/users/tauhid621/orgs",
+        "repos_url": "https://api.github.com/users/tauhid621/repos",
+        "events_url": "https://api.github.com/users/tauhid621/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/tauhid621/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "fa-assistant",
+        "id": 77991023,
+        "node_id": "MDQ6VXNlcjc3OTkxMDIz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/77991023?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/fa-assistant",
+        "html_url": "https://github.com/fa-assistant",
+        "followers_url": "https://api.github.com/users/fa-assistant/followers",
+        "following_url": "https://api.github.com/users/fa-assistant/following{/other_user}",
+        "gists_url": "https://api.github.com/users/fa-assistant/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/fa-assistant/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/fa-assistant/subscriptions",
+        "organizations_url": "https://api.github.com/users/fa-assistant/orgs",
+        "repos_url": "https://api.github.com/users/fa-assistant/repos",
+        "events_url": "https://api.github.com/users/fa-assistant/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/fa-assistant/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "ca815fb3326f6313bb77e5d8acdcd558eef326f8",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/commits/ca815fb3326f6313bb77e5d8acdcd558eef326f8",
+          "html_url": "https://github.com/dbt-labs/dbt/commit/ca815fb3326f6313bb77e5d8acdcd558eef326f8"
+        }
+      ]
+    },
+    {
+      "sha": "504b4c6eede78f0c68196d2f48d5a46fa67d3b69",
+      "node_id": "C_kwDOAzEXQ9oAKDUwNGI0YzZlZWRlNzhmMGM2ODE5NmQyZjQ4ZDVhNDZmYTY3ZDNiNjk",
+      "commit": {
+        "author": {
+          "name": "Elias deFaria",
+          "email": "elias.defaria@dbtlabs.com",
+          "date": "2026-09-07T22:32:51Z"
+        },
+        "committer": {
+          "name": "fa-assistant",
+          "email": "bots+fa-assistant@fishtownanalytics.com",
+          "date": "2026-09-07T23:05:32Z"
+        },
+        "message": "Show a dbt Core style execution index on node result lines\n\n* Show a dbt Core style execution index on node result lines\n\ndbt Core prefixes every per-node progress log with an execution index\n(\"1 of 53 OK created ...\"), which users rely on to gauge how far a run\nhas gotten. Fusion had no equivalent.\n\nAdd `node_index` / `node_count_total` to the `NodeProcessed` event and\nrender them inside the existing duration bracket, so a result line now\nreads:\n\n  Succeeded [ 3 of 53 in   0.34s] model analytics.fct_orders (table)\n\nThe index is claimed inside the `NodeProcessed` span builder, which the\nspan manager invokes lazily and exactly once as a node's first task\nopens. That makes the number reflect the order nodes begin processing,\nwhich is what dbt Core's dequeue counter measures, and needs no\nscheduler changes. Ephemeral models are excluded from both the index and\nthe denominator: Fusion pulls them into the selection to build them and\nreports them as no-op skips that never print, so counting them would\nleave the largest index short of the total. dbt Core leaves them out for\nthe same reason.\n\nThe counter is right-aligned to the width of the total so the columns\nafter the bracket hold their position. Rows with no meaningful elapsed\ntime render the duration as dashes, and \"in -------\" reads wrong, so\nthose get padding where \"in\" would go, keeping the bracket width\nidentical. Grouped lines (the skipped-test summary and aggregated\ngeneric-test headers) stand in for several nodes and so show no index,\nbut pad to the same width to stay aligned.\n\nAll three sinks carry it: stdout, logs/dbt.log, and --log-format json.\nThe JSON payloads gain `index` and `total` as structured fields, using\ndbt Core's field names and its convention of emitting 0 for ephemeral\nmodels. This resolves a standing TODO in the json compat layer.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Move the execution index to the end of node result lines\n\nFeedback on the first cut: putting the counter in the middle of the line\npushed the columns after it around and buried the information users\nactually scan for. Move it to the end instead, where it reads as an\nannotation on the line rather than a column in it.\n\n  Succeeded seed  main.raw_orders (table) [1 of 11 in 0.02s]\n     Passed test  not_null_fct_orders_amount [7 of 11 in 0.01s]\n    Skipped model main.child_of_broken (view) [11 of 11]\n\nThe action keeps its right-aligned column, so it still lines up with\nevery other progress message (\"Loading\", \"Parsing\", \"Installing\").\n\nBecause the field no longer sits mid-line, nothing downstream depends on\nits width, so the counter and the duration render at their natural size\ninstead of being padded to fixed widths. Two consequences:\n\n- A zero duration is dropped rather than printed as `-------`, since\n  skips and cache reuse have nothing to time.\n- When there is neither a counter nor an elapsed time, the brackets are\n  omitted altogether rather than emitted empty. This is what the grouped\n  skipped-test summary hits.\n\nGrouped lines (that summary and aggregated generic-test headers) stand in\nfor several nodes, so they report elapsed time alone.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Update golden files for the execution index\n\nApplied from the CI patches for run 33114625062 via\n`cargo xtask apply-ci-goldies` (348 patch blocks, all validated with\n`git apply --check` first). These cover the warehouse-backed goldies\n(Snowflake, BigQuery, Databricks) that cannot be regenerated locally.\n\nText goldies move the trailing field into place:\n\n  - Succeeded [duration] model pub.stg_payments (view)\n  + Succeeded model pub.stg_payments (view) [1 of 8 in duration]\n\nNodes with nothing to time lose the placeholder duration entirely:\n\n  + Succeeded seed  pub.raw_orders (table) [2 of 8]\n\nJSONL/OTLP telemetry goldies pick up the new `node_index` and\n`node_count_total` span attributes.\n\nLines that intentionally carry no counter, and so change only by losing\ntheir duration bracket: ephemeral models (excluded from the numbering, as\nin dbt Core), aggregated generic-test group headers (they stand for\nseveral nodes), and source freshness results (sources are partitioned out\nof the scheduler's selected set, so they are not numbered today).\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Update goldens for the execution index after merging main\n\nApplied from the CI run's golden patches: node result lines pick up the\ntrailing [N of M in duration] field, and the otel snapshots gain the\nnode_index / node_count_total span attributes.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Update two goldens for zero-duration execution index fields\n\nBoth nodes fail before any execution is timed, so the progress field\nrenders as a bare [N of M] with no elapsed time.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Decide the elapsed field from the outcome, not from a zero duration\n\nThe progress field read a zero duration as \"nothing to time\" and dropped\nthe elapsed part. But duration_ms counts whole milliseconds, so a node\nthat really did run can measure zero: any node near the 0/1ms boundary\nrendered [N of M] on one run and [N of M in 0.00s] on the next, and its\ngolden flapped with it. Two goldens flipped between consecutive CI runs\non this branch, and eight more were sitting on the same boundary.\n\nThe caller already knows which work never ran -- it is the same condition\nthat used to zero the duration -- so pass that through as Option and let a\nmeasured zero render like any other measurement.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Reconcile two goldens with node counts that changed on main\n\nThe merge queue tests this branch against current main, and two goldens\ncame out of the merge in a state the binary can never produce.\n\n`adapters_snowflake_repros_snapshot_warning_1` gained a fourth snapshot\non main. Git merged that line in from main's side, in the pre-index\nformat, while keeping this branch's three indexed lines that were\nrecorded when the project only had three snapshots. The result claimed\n`[1 of 3]` through `[3 of 3]` alongside an un-indexed fourth node, with\na summary reporting four. All four lines now carry `[N of 4]`.\n\n`run_lake_compute_seed_build_demo` is new on main and was recorded\nbefore this branch existed, so every result line was still in the\npre-index format. Its counter values come from running the test locally\n-- it replays a recording, so it needs no warehouse. Only the eight\nresult lines are touched: the local run also drops the stderr warnings\nand the execution summary and reports dbt State as enabled, none of\nwhich reproduce in CI, so accepting the generated golden wholesale\nwould have baked local environment state into it.\n\nThe 126 goldens still showing the pre-index format are not stale. They\ncover node kinds that take no index, `check` nodes chief among them, and\nthey pass on this branch's own CI run.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Stop pinning the execution index in tests that sort their output\n\n`run_lake_compute_seed_build_demo` failed CI on every retry, each time\nwanting different numbers. Three retries in one job disagreed with each\nother: `unique_raw_customers_customer_id` came back as 3, then 2, then\n4, and five of the eight nodes moved. No golden value can be chosen that\nsurvives the next run.\n\nThe test runs `fs_vec_par(.., Some(0))`, so Fusion schedules its nodes\nconcurrently and the order they start in -- which is the order the index\nis handed out in -- differs run to run. It passed on main only because\nmain's golden predates the index.\n\nSorting is already how a test declares that its node order is not fixed,\nso that flag is exactly the right condition: normalize the position for\ntests that sort, leave it asserted for tests that do not. Sequential\ntests keep full coverage of the numbering, which is where the numbering\nis meaningful in the first place.\n\nThe total is deliberately left alone. It is stable regardless of\nscheduling, and it is what catches a node entering or leaving the\nselection -- the failure this branch hit when a snapshot was added on\nmain.\n\nNormalizing both sides of the comparison means no existing golden had to\nchange. The eight lake_compute goldens updated here only swap pinned\nnumbers for `index`, matching what `--goldie-update` now writes, so they\nno longer read as though a position were being asserted.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 5 (1M context) <noreply@anthropic.com>\nGitOrigin-RevId: 428f41c1b8a0fb576eca60dcb11731149b6d861f",
+        "tree": {
+          "sha": "21bea7765742cec379e15d49573e8662e636fc7b",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/git/trees/21bea7765742cec379e15d49573e8662e636fc7b"
+        },
+        "url": "https://api.github.com/repos/dbt-labs/dbt/git/commits/504b4c6eede78f0c68196d2f48d5a46fa67d3b69",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unverified_email",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCgAdFiEEdQw6hSNZ/n3fzX63r9xgsZtTDTAFAmqfQzwACgkQr9xgsZtT\nDTDW/hAAgsbg26Cjqz1LEhoqljnkW6gYlKmellByBFVtrrVBtkgO5nZMspauB19d\nXN3F8ZeYoIEUYysFqKgPJMqQkTUQkMMDtbfupresjA7YdhXfTZF6BQEEEsUX4/kN\nu96kGAr0Ft4XrZFypj4xojcUB30FMlzecXTrxQXLAyJcO53X+Lc7ViPPNcTa0zk9\nTwiP79d2uMi87cv9hzhPOzCn6Qzy96Zv/9Amuj1hqOu6qUNuONeBMb1krXJGclA+\nEwx0mUeLeJzb3TLKBFotExN9qnMo51Cr0gxnVUI1ZY0Vj9ldq7H/IBeMwBiHp6Xu\nFubjOhGTlsWByck0OLxPjTwGjKcm1OEX5Uq0J4lK71NSpvjc8uMkYD+7e+AffDfy\nJ6lQ/m1MLLvkVX0pu9/wiuMMadXaTDeNwxicpd3hsUennrq8uwKX4+qzYyLXE8Jf\nNOUzEAwkfszBaZhKXFAAzXBeoENwgNO9ndF41z5N9Qu97JIYQy60pzVrLmpNNzY2\nKZ7oWKHXyHcwxcQo4JNPsGzYku0wTQYewwwPq+cpjwaQosDHMGKaRe0M09Koiq4A\n9QACp1kZhKsIAp+HeOu1oLEl1eFUD/c4uvCcEpQGB7c8uXwQCCMm/QydpQxD/Cla\nnXLpwBFG1nGhNWTnsFlCyhGlDXrhgEeUAWMnSRPf9olLMb9hUgg=\n=F3MR\n-----END PGP SIGNATURE-----",
+          "payload": "tree 21bea7765742cec379e15d49573e8662e636fc7b\nparent 62336627884fee7b5903ae7958f239ac06e761b5\nauthor Elias deFaria <elias.defaria@dbtlabs.com> 1788820371 +0000\ncommitter fa-assistant <bots+fa-assistant@fishtownanalytics.com> 1788822332 +0000\n\nShow a dbt Core style execution index on node result lines\n\n* Show a dbt Core style execution index on node result lines\n\ndbt Core prefixes every per-node progress log with an execution index\n(\"1 of 53 OK created ...\"), which users rely on to gauge how far a run\nhas gotten. Fusion had no equivalent.\n\nAdd `node_index` / `node_count_total` to the `NodeProcessed` event and\nrender them inside the existing duration bracket, so a result line now\nreads:\n\n  Succeeded [ 3 of 53 in   0.34s] model analytics.fct_orders (table)\n\nThe index is claimed inside the `NodeProcessed` span builder, which the\nspan manager invokes lazily and exactly once as a node's first task\nopens. That makes the number reflect the order nodes begin processing,\nwhich is what dbt Core's dequeue counter measures, and needs no\nscheduler changes. Ephemeral models are excluded from both the index and\nthe denominator: Fusion pulls them into the selection to build them and\nreports them as no-op skips that never print, so counting them would\nleave the largest index short of the total. dbt Core leaves them out for\nthe same reason.\n\nThe counter is right-aligned to the width of the total so the columns\nafter the bracket hold their position. Rows with no meaningful elapsed\ntime render the duration as dashes, and \"in -------\" reads wrong, so\nthose get padding where \"in\" would go, keeping the bracket width\nidentical. Grouped lines (the skipped-test summary and aggregated\ngeneric-test headers) stand in for several nodes and so show no index,\nbut pad to the same width to stay aligned.\n\nAll three sinks carry it: stdout, logs/dbt.log, and --log-format json.\nThe JSON payloads gain `index` and `total` as structured fields, using\ndbt Core's field names and its convention of emitting 0 for ephemeral\nmodels. This resolves a standing TODO in the json compat layer.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Move the execution index to the end of node result lines\n\nFeedback on the first cut: putting the counter in the middle of the line\npushed the columns after it around and buried the information users\nactually scan for. Move it to the end instead, where it reads as an\nannotation on the line rather than a column in it.\n\n  Succeeded seed  main.raw_orders (table) [1 of 11 in 0.02s]\n     Passed test  not_null_fct_orders_amount [7 of 11 in 0.01s]\n    Skipped model main.child_of_broken (view) [11 of 11]\n\nThe action keeps its right-aligned column, so it still lines up with\nevery other progress message (\"Loading\", \"Parsing\", \"Installing\").\n\nBecause the field no longer sits mid-line, nothing downstream depends on\nits width, so the counter and the duration render at their natural size\ninstead of being padded to fixed widths. Two consequences:\n\n- A zero duration is dropped rather than printed as `-------`, since\n  skips and cache reuse have nothing to time.\n- When there is neither a counter nor an elapsed time, the brackets are\n  omitted altogether rather than emitted empty. This is what the grouped\n  skipped-test summary hits.\n\nGrouped lines (that summary and aggregated generic-test headers) stand in\nfor several nodes, so they report elapsed time alone.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Update golden files for the execution index\n\nApplied from the CI patches for run 33114625062 via\n`cargo xtask apply-ci-goldies` (348 patch blocks, all validated with\n`git apply --check` first). These cover the warehouse-backed goldies\n(Snowflake, BigQuery, Databricks) that cannot be regenerated locally.\n\nText goldies move the trailing field into place:\n\n  - Succeeded [duration] model pub.stg_payments (view)\n  + Succeeded model pub.stg_payments (view) [1 of 8 in duration]\n\nNodes with nothing to time lose the placeholder duration entirely:\n\n  + Succeeded seed  pub.raw_orders (table) [2 of 8]\n\nJSONL/OTLP telemetry goldies pick up the new `node_index` and\n`node_count_total` span attributes.\n\nLines that intentionally carry no counter, and so change only by losing\ntheir duration bracket: ephemeral models (excluded from the numbering, as\nin dbt Core), aggregated generic-test group headers (they stand for\nseveral nodes), and source freshness results (sources are partitioned out\nof the scheduler's selected set, so they are not numbered today).\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Update goldens for the execution index after merging main\n\nApplied from the CI run's golden patches: node result lines pick up the\ntrailing [N of M in duration] field, and the otel snapshots gain the\nnode_index / node_count_total span attributes.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Update two goldens for zero-duration execution index fields\n\nBoth nodes fail before any execution is timed, so the progress field\nrenders as a bare [N of M] with no elapsed time.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Decide the elapsed field from the outcome, not from a zero duration\n\nThe progress field read a zero duration as \"nothing to time\" and dropped\nthe elapsed part. But duration_ms counts whole milliseconds, so a node\nthat really did run can measure zero: any node near the 0/1ms boundary\nrendered [N of M] on one run and [N of M in 0.00s] on the next, and its\ngolden flapped with it. Two goldens flipped between consecutive CI runs\non this branch, and eight more were sitting on the same boundary.\n\nThe caller already knows which work never ran -- it is the same condition\nthat used to zero the duration -- so pass that through as Option and let a\nmeasured zero render like any other measurement.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Reconcile two goldens with node counts that changed on main\n\nThe merge queue tests this branch against current main, and two goldens\ncame out of the merge in a state the binary can never produce.\n\n`adapters_snowflake_repros_snapshot_warning_1` gained a fourth snapshot\non main. Git merged that line in from main's side, in the pre-index\nformat, while keeping this branch's three indexed lines that were\nrecorded when the project only had three snapshots. The result claimed\n`[1 of 3]` through `[3 of 3]` alongside an un-indexed fourth node, with\na summary reporting four. All four lines now carry `[N of 4]`.\n\n`run_lake_compute_seed_build_demo` is new on main and was recorded\nbefore this branch existed, so every result line was still in the\npre-index format. Its counter values come from running the test locally\n-- it replays a recording, so it needs no warehouse. Only the eight\nresult lines are touched: the local run also drops the stderr warnings\nand the execution summary and reports dbt State as enabled, none of\nwhich reproduce in CI, so accepting the generated golden wholesale\nwould have baked local environment state into it.\n\nThe 126 goldens still showing the pre-index format are not stale. They\ncover node kinds that take no index, `check` nodes chief among them, and\nthey pass on this branch's own CI run.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n* Stop pinning the execution index in tests that sort their output\n\n`run_lake_compute_seed_build_demo` failed CI on every retry, each time\nwanting different numbers. Three retries in one job disagreed with each\nother: `unique_raw_customers_customer_id` came back as 3, then 2, then\n4, and five of the eight nodes moved. No golden value can be chosen that\nsurvives the next run.\n\nThe test runs `fs_vec_par(.., Some(0))`, so Fusion schedules its nodes\nconcurrently and the order they start in -- which is the order the index\nis handed out in -- differs run to run. It passed on main only because\nmain's golden predates the index.\n\nSorting is already how a test declares that its node order is not fixed,\nso that flag is exactly the right condition: normalize the position for\ntests that sort, leave it asserted for tests that do not. Sequential\ntests keep full coverage of the numbering, which is where the numbering\nis meaningful in the first place.\n\nThe total is deliberately left alone. It is stable regardless of\nscheduling, and it is what catches a node entering or leaving the\nselection -- the failure this branch hit when a snapshot was added on\nmain.\n\nNormalizing both sides of the comparison means no existing golden had to\nchange. The eight lake_compute goldens updated here only swap pinned\nnumbers for `index`, matching what `--goldie-update` now writes, so they\nno longer read as though a position were being asserted.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 5 (1M context) <noreply@anthropic.com>\nGitOrigin-RevId: 428f41c1b8a0fb576eca60dcb11731149b6d861f\n",
+          "verified_at": null
+        }
+      },
+      "url": "https://api.github.com/repos/dbt-labs/dbt/commits/504b4c6eede78f0c68196d2f48d5a46fa67d3b69",
+      "html_url": "https://github.com/dbt-labs/dbt/commit/504b4c6eede78f0c68196d2f48d5a46fa67d3b69",
+      "comments_url": "https://api.github.com/repos/dbt-labs/dbt/commits/504b4c6eede78f0c68196d2f48d5a46fa67d3b69/comments",
+      "author": {
+        "login": "eliasdefaria",
+        "id": 30669330,
+        "node_id": "MDQ6VXNlcjMwNjY5MzMw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/30669330?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/eliasdefaria",
+        "html_url": "https://github.com/eliasdefaria",
+        "followers_url": "https://api.github.com/users/eliasdefaria/followers",
+        "following_url": "https://api.github.com/users/eliasdefaria/following{/other_user}",
+        "gists_url": "https://api.github.com/users/eliasdefaria/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/eliasdefaria/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/eliasdefaria/subscriptions",
+        "organizations_url": "https://api.github.com/users/eliasdefaria/orgs",
+        "repos_url": "https://api.github.com/users/eliasdefaria/repos",
+        "events_url": "https://api.github.com/users/eliasdefaria/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/eliasdefaria/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "fa-assistant",
+        "id": 77991023,
+        "node_id": "MDQ6VXNlcjc3OTkxMDIz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/77991023?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/fa-assistant",
+        "html_url": "https://github.com/fa-assistant",
+        "followers_url": "https://api.github.com/users/fa-assistant/followers",
+        "following_url": "https://api.github.com/users/fa-assistant/following{/other_user}",
+        "gists_url": "https://api.github.com/users/fa-assistant/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/fa-assistant/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/fa-assistant/subscriptions",
+        "organizations_url": "https://api.github.com/users/fa-assistant/orgs",
+        "repos_url": "https://api.github.com/users/fa-assistant/repos",
+        "events_url": "https://api.github.com/users/fa-assistant/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/fa-assistant/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "62336627884fee7b5903ae7958f239ac06e761b5",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/commits/62336627884fee7b5903ae7958f239ac06e761b5",
+          "html_url": "https://github.com/dbt-labs/dbt/commit/62336627884fee7b5903ae7958f239ac06e761b5"
+        }
+      ]
+    },
+    {
+      "sha": "775399eaec88882b098a84f7face903303535801",
+      "node_id": "C_kwDOAzEXQ9oAKDc3NTM5OWVhZWM4ODg4MmIwOThhODRmN2ZhY2U5MDMzMDM1MzU4MDE",
+      "commit": {
+        "author": {
+          "name": "Lucas Valente",
+          "email": "serramatutu@users.noreply.github.com",
+          "date": "2026-08-20T15:37:53Z"
+        },
+        "committer": {
+          "name": "fa-assistant",
+          "email": "bots+fa-assistant@fishtownanalytics.com",
+          "date": "2026-08-20T16:10:44Z"
+        },
+        "message": "Improve contributing guidelines\n\nGitOrigin-RevId: c9c4dc990a69dfa1f3e4d11b55c9a394db405227",
+        "tree": {
+          "sha": "7c26e1d81f10a867377e41022f8e3f5ab93036ef",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/git/trees/7c26e1d81f10a867377e41022f8e3f5ab93036ef"
+        },
+        "url": "https://api.github.com/repos/dbt-labs/dbt/git/commits/775399eaec88882b098a84f7face903303535801",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCgAdFiEEdQw6hSNZ/n3fzX63r9xgsZtTDTAFAmqHJwQACgkQr9xgsZtT\nDTAuxg//bGc8QdESq1+LV04z6KhRqOVKPgyr5aYLZ32LhNxCRIhHn0VEnZjlccTH\nv6XHEfKe54rdgf/dDEvdMAm8qs8HOzpxXFLgw9uPPm+E2oz/5BNYKBvJaXDz0X72\nX19dr7iLsHSW8BbDj4w8DQPKxAKctYUi43uphvZm4wxeE2z6RvL1TocnZVDm2Tpu\nt5ebW/vXqwS5d8m1LxUBwGmDwM6a5ji+9SNI5NKp2cQNzVUw6o68RZeR9E3kGY9f\nIKIAprCNOeSvfQKeurtI+uiTsA4gi+QUyOPe0xmaUK+s6bDbhTOWUfE5XmcAYc+h\n4d5+zI1aK44lPXUZGcZisYOw1x6Sk8VhSupJGZPXw76kP6BZslx+RO7TRNEhAIHK\nuoDnhpN4fljd6H0SLWMXH9wtbR3nXP5PLUcjaOOl0UYHydMJFHM6J+KR4/gA7O3n\n7G9nZVZ4M1ggn7SJ1V3J/YSyoudgRi+940ur+gQMxpwMdCztDmzfZPj3ODGV6SG8\nDnqRXA5uody7veEmgcWj0MLNeV9eLpUEEVhi2pW/OjJZjdhqlCYf1L0t8P7NXfMO\nFyFN0j+XOQoP0HF1PscQw/QuMoutUneFg8QQPasDfFTHuNE2KaYgQNidH889rlkk\nCgDTPbzAva9SWtG6hd0WCOgEHsnz18w/SXdJ5htpton9qHDnUtI=\n=ivQA\n-----END PGP SIGNATURE-----",
+          "payload": "tree 7c26e1d81f10a867377e41022f8e3f5ab93036ef\nparent db1cdd484fa5c7e309830b605c4eb78606ed5545\nauthor Lucas Valente <serramatutu@users.noreply.github.com> 1787240273 +0000\ncommitter fa-assistant <bots+fa-assistant@fishtownanalytics.com> 1787242244 +0000\n\nImprove contributing guidelines\n\nGitOrigin-RevId: c9c4dc990a69dfa1f3e4d11b55c9a394db405227\n",
+          "verified_at": "2026-08-20T16:10:48Z"
+        }
+      },
+      "url": "https://api.github.com/repos/dbt-labs/dbt/commits/775399eaec88882b098a84f7face903303535801",
+      "html_url": "https://github.com/dbt-labs/dbt/commit/775399eaec88882b098a84f7face903303535801",
+      "comments_url": "https://api.github.com/repos/dbt-labs/dbt/commits/775399eaec88882b098a84f7face903303535801/comments",
+      "author": {
+        "login": "serramatutu",
+        "id": 18057473,
+        "node_id": "MDQ6VXNlcjE4MDU3NDcz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/18057473?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/serramatutu",
+        "html_url": "https://github.com/serramatutu",
+        "followers_url": "https://api.github.com/users/serramatutu/followers",
+        "following_url": "https://api.github.com/users/serramatutu/following{/other_user}",
+        "gists_url": "https://api.github.com/users/serramatutu/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/serramatutu/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/serramatutu/subscriptions",
+        "organizations_url": "https://api.github.com/users/serramatutu/orgs",
+        "repos_url": "https://api.github.com/users/serramatutu/repos",
+        "events_url": "https://api.github.com/users/serramatutu/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/serramatutu/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "fa-assistant",
+        "id": 77991023,
+        "node_id": "MDQ6VXNlcjc3OTkxMDIz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/77991023?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/fa-assistant",
+        "html_url": "https://github.com/fa-assistant",
+        "followers_url": "https://api.github.com/users/fa-assistant/followers",
+        "following_url": "https://api.github.com/users/fa-assistant/following{/other_user}",
+        "gists_url": "https://api.github.com/users/fa-assistant/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/fa-assistant/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/fa-assistant/subscriptions",
+        "organizations_url": "https://api.github.com/users/fa-assistant/orgs",
+        "repos_url": "https://api.github.com/users/fa-assistant/repos",
+        "events_url": "https://api.github.com/users/fa-assistant/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/fa-assistant/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "db1cdd484fa5c7e309830b605c4eb78606ed5545",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/commits/db1cdd484fa5c7e309830b605c4eb78606ed5545",
+          "html_url": "https://github.com/dbt-labs/dbt/commit/db1cdd484fa5c7e309830b605c4eb78606ed5545"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "status_code": 404,
+  "headers": {
+    "Date": "Sun, 13 Sep 2026 20:06:52 GMT",
+    "Content-Type": "application/json; charset=utf-8",
+    "github-authentication-token-expiration": "2026-10-03 20:59:49 UTC",
+    "X-GitHub-Media-Type": "github.v3; format=json",
+    "x-accepted-github-permissions": "contents=read",
+    "x-github-api-version-selected": "2022-11-28",
+    "Access-Control-Expose-Headers": "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning",
+    "Access-Control-Allow-Origin": "*",
+    "Strict-Transport-Security": "max-age=31536000; includeSubdomains; preload",
+    "X-Frame-Options": "deny",
+    "X-Content-Type-Options": "nosniff",
+    "X-XSS-Protection": "0",
+    "Referrer-Policy": "origin-when-cross-origin, strict-origin-when-cross-origin",
+    "Content-Security-Policy": "default-src 'none'",
+    "Vary": "Accept-Encoding, Accept, X-Requested-With",
+    "Content-Encoding": "gzip",
+    "Transfer-Encoding": "chunked",
+    "Server": "github.com",
+    "X-RateLimit-Limit": "5000",
+    "X-RateLimit-Remaining": "4896",
+    "X-RateLimit-Reset": "1789332283",
+    "X-RateLimit-Used": "104",
+    "X-RateLimit-Resource": "core",
+    "X-GitHub-Request-Id": "E06A:34D236:21182C0:26C552B:6AA7025C",
+    "x-github-edge-region": "uksouth"
+  },
+  "body": {
+    "message": "Not Found",
+    "documentation_url": "https://docs.github.com/rest/commits/commits#list-commits",
+    "status": "404"
+  }
+}

@@ -1,0 +1,446 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Date": "Sun, 13 Sep 2026 20:06:49 GMT",
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "private, max-age=60, s-maxage=60",
+    "Vary": "Accept, Authorization, Cookie, X-GitHub-OTP,Accept-Encoding, Accept, X-Requested-With",
+    "ETag": "W/\"eb7d29ae1127ee1a4a2d9f760d97a393aa9dd0c1999e277c7934f1bd1a15959d\"",
+    "Last-Modified": "Sat, 12 Sep 2026 20:56:02 GMT",
+    "github-authentication-token-expiration": "2026-10-03 20:59:49 UTC",
+    "X-GitHub-Media-Type": "github.v3; format=json",
+    "Link": "<https://api.github.com/repositories/53548867/commits?since=2025-09-18T20%3A06%3A49Z&per_page=5&page=2>; rel=\"next\", <https://api.github.com/repositories/53548867/commits?since=2025-09-18T20%3A06%3A49Z&per_page=5&page=837>; rel=\"last\"",
+    "x-accepted-github-permissions": "contents=read",
+    "x-github-api-version-selected": "2022-11-28",
+    "Access-Control-Expose-Headers": "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning",
+    "Access-Control-Allow-Origin": "*",
+    "Strict-Transport-Security": "max-age=31536000; includeSubdomains; preload",
+    "X-Frame-Options": "deny",
+    "X-Content-Type-Options": "nosniff",
+    "X-XSS-Protection": "0",
+    "Referrer-Policy": "origin-when-cross-origin, strict-origin-when-cross-origin",
+    "Content-Security-Policy": "default-src 'none'",
+    "Content-Encoding": "gzip",
+    "Transfer-Encoding": "chunked",
+    "Server": "github.com",
+    "X-RateLimit-Limit": "5000",
+    "X-RateLimit-Remaining": "4903",
+    "X-RateLimit-Reset": "1789332283",
+    "X-RateLimit-Used": "97",
+    "X-RateLimit-Resource": "core",
+    "X-GitHub-Request-Id": "E04E:DC3F0:1FF27F4:259F93B:6AA70259",
+    "x-github-edge-region": "uksouth"
+  },
+  "body": [
+    {
+      "sha": "95bc45a49210229a43005f8e1e4bbb1358c11304",
+      "node_id": "C_kwDOAzEXQ9oAKDk1YmM0NWE0OTIxMDIyOWE0MzAwNWY4ZTFlNGJiYjEzNThjMTEzMDQ",
+      "commit": {
+        "author": {
+          "name": "Ryan Eakman",
+          "email": "6326532+eakmanrq@users.noreply.github.com",
+          "date": "2026-09-12T20:22:52Z"
+        },
+        "committer": {
+          "name": "fa-assistant",
+          "email": "dev-qarp+fa-assistant@dbtlabs.com",
+          "date": "2026-09-12T20:56:02Z"
+        },
+        "message": "feat: bind dbt artifacts to prepared invocations\n\n* feat: bind dbt artifacts to prepared invocations\n\nGive every dbt child one prepared description of where its artifacts\nwill land and route every consumer through it. `PreparedInvocation`\nsnapshots the selected project, the invocation cwd, the effective\nenvironment (inherited values, the selected project's filtered .env,\nFusion's invocation-cwd dotenv fallback and DBT_ENGINE_* alias\npromotion), the launch argv and the resolved target, metadata,\nindex-output, compare-results and context paths, following dbt's own\nprecedence (explicit --target-path, DBT_ENGINE_TARGET_PATH for Fusion,\nDBT_TARGET_PATH, Core YAML target-path rendered with the accepted\nenv_var/var subset, then target/). MCP tools, exec_dbt, compare, show,\nlint, the native Codex handlers, the Codex startup launches and the\nWizard direct query launcher launch from the prepared argv and refresh\nfrom the prepared source; the SDK gains Project::ingest_from_prepared.\n\nA successful command that produced nothing new no longer re-ingests\nunrelated artifacts, and a Fusion command that produced a different\nmetadata source is loaded into a fresh database and swapped in whole.\nStartup and discovery resolve the configured cache per executable\nfamily (index_dir_for_kind/target_dir_for_kind), Fusion workspaces\nstay out of the Core JSON bootstrap path, and artifact metadata records\nthe source identity so a restart keeps a redirected source.\n\nConsistency is single-process by design: an in-process ordering token\nunder the existing project lock rejects late older completions; across\nprocesses the last writer wins. Cross-process coherence is tracked in a\nfollow-up issue; the earlier in-PR attempt is archived on\neakmanrq/wizard-dbt-artifact-environment-publication-wip.\n\nAdds a real Fusion artifact-parity test (default, explicit, .env plain\nand alias, invocation-cwd alias promotion over the selected project's\nplain value, structured explicit target, YAML and empty rejections,\nSDK ingest from the prepared source), required in the Test dbt-index\njob.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UzzKgfugfXyuZLdS7ayB2q\n\n* fix: address PR 14828 review feedback\n\n* fix: run a query against its own environment's project\n\n`run_show_with_manager` selected `root_project_dir` as the prepared\ninvocation's project, falling back to `cwd`. `root_project_dir` is not\nthe selected project: `worktree::handlers::query_paths` builds it as the\nproject directory inside the *source checkout* (`repo_root` + the\nproject's relative path), while `cwd` is the same project inside the\nenvironment's worktree.\n\nA SQL query run from an isolated environment therefore launched\n`dbt show` with `--project-dir <source checkout project>` and the source\ncheckout's `.env`, and anchored the target/index paths there, while the\nchild's cwd stayed the worktree \u2014 compiling against the main checkout's\nmodels and macros instead of the environment's edits. For the default\nenvironment `cwd == root_project_dir`, so the defect was invisible\nthere.\n\nSelect `cwd`. `root_project_dir` keeps the two roles it has everywhere\nelse in this file: a fallback for locating the dbt binary/venv\n(`resolve_dbt_for_query`) and a second entry in the profile search order\n(`profiles_dir_for_resolve`).\n\nThe existing test pinned the defect \u2014 it passed a worktree as `cwd`, a\ndifferent directory as `root_project_dir`, and asserted `--project-dir`\nand the `.env` of that other directory. It now pins the contract: when\n`cwd != root_project_dir` the child gets `--project-dir <cwd>`, the\nworktree's `.env`, the worktree as its cwd, and no trace of the source\ncheckout.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01StAPotBfr3eXAqgKa1YfYQ\n\n* fix: reconcile prepared invocations with main's add_project and compare work\n\nFollow-on to the rebase resolution, where main and this branch had changed\nthe same code paths:\n\n- `add_project` keeps main's result binding and tool-list-changed\n  notification while routing initialization through the shared\n  `init_project`, and re-applies the directory-basename alias that\n  `init_project` leaves unset.\n- `run_inner` keeps main's derived primary workspace key; the\n  configured-name binding this branch added is redundant against it.\n- `FusionProjectOverride` is removed: the active-source binding\n  introduced here swaps a redirected Fusion metadata source into a fresh\n  database instead of layering a delta stream over the configured one.\n- The compare handler keeps main's capability preflight and outcome enum\n  and takes its results path from the prepared invocation's artifact\n  source; main's relocated-target test is ported onto that binding with a\n  Core binary, since Fusion rejects a non-default YAML `target-path`.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n* fix: refresh the codex-rs lock for the metadata-parquet dependency\n\n`crates/dbt-index` now depends on `dbt-metadata-parquet`, which resolves\ninto the separate `wizard/dbt-codex/codex-rs` workspace through its path\ndeps. The \"Verify codex-rs Cargo.lock\" job runs `cargo metadata --locked`\nthere, so the refreshed entry has to be committed.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n* fix: resolve the equals-option project dir test on Windows\n\n`prepared_raw_target_path_survives_equals_option` passed a literal\n`--project-dir=/tmp/project`. On Windows that path has a root but no\ndrive, so it is not absolute and resolves against the invocation cwd\nrather than staying put. It now uses a real absolute directory under the\ntest's temporary root, matching the boolean-defer sibling test.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n* fix: build v2 against current main on Linux and Windows\n\n- #14870 added three `workspace_prod_parse_gates_on_workspace_options`\n  calls to `run_workspace_prod_parse` with the five-argument signature;\n  this branch adds a `binary_kind` parameter. They pass\n  `DbtBinaryKind::Core`, like the other test in that module. The tests\n  count logged lines that are exactly `parse`, so the `--project-dir`\n  arguments Core adds do not affect them.\n- `project_fixture` only creates directories and writes `.env`, but was\n  `cfg(unix)` alongside the shell-script `fake_dbt` helper, so the\n  prepared-invocation tests that call it failed to build on Windows.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n* fix: compare artifact paths canonically across spellings\n\nArtifact sources anchor on a project's canonical path, which expands\nWindows 8.3 short names (`ADMINI~1`) and resolves macOS's `/var` to\n`/private/var`. Windows CI surfaced one product bug and a set of tests\nthat assumed the raw temporary-directory spelling.\n\nProduct: workspace-scan deduplication compared the caller's `--db`\nspelling against a scanned index resolved through the canonical project,\nso the primary index was registered twice and a single-project call that\nomits `project` failed. Both sides now go through `sdk::comparable_path`,\nwhich canonicalizes the longest existing ancestor with the same resolver\nthe artifact source uses and re-appends the not-yet-created remainder.\n`workspace_scan_deduplicates_the_primary_index` still uses a raw\n`TempDir`, so it guards this case; it fails without the fix under a\nsymlinked `TMPDIR`.\n\nTests: fixtures that compare resolved artifact paths now create their\ntemporary root at its canonical spelling, and the persisted Fusion source\nidentity is compared as a parsed path rather than a substring of JSON,\nwhich escapes Windows separators. This includes unix-only tests that\nwould break on macOS, where the macOS job runs on pushes to main.\n\nThe whole dbt-index suite passes with a symlinked `TMPDIR` standing in\nfor the short-name and `/private` spellings.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n---------\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>\nGitOrigin-RevId: 14ce4bbd152c3bea8d2f0d0772710b9990f45e54",
+        "tree": {
+          "sha": "de448bcd208b2a973ca2c232bd5c5e17526711c6",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/git/trees/de448bcd208b2a973ca2c232bd5c5e17526711c6"
+        },
+        "url": "https://api.github.com/repos/dbt-labs/dbt/git/commits/95bc45a49210229a43005f8e1e4bbb1358c11304",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCgAdFiEEMGb0Yq0m2eumOSAUPJ5bGwzFlFgFAmqlvGIACgkQPJ5bGwzF\nlFjrig/+K5o0sldHj0bx2C/PfZxsFy4kklDIivEm92U8QPvzKCakckmsQR6uJocD\ngH1jp4eVO6OZn2rlEVsKkuq52yYkSAvz6b22wV7S4okNDTXx8wmXrFm9tZrow77/\nj8i3AJ9G6mMahEjxtKhuBYKE1T36jzb9DViE1vvTfrd3xFfNsEJoJDI0vg1cEMcS\nVFgBz/x8BH6/R+TvaLgyVojzfUy0poh5qZau/hC+LYFO8oe6t6tnJ8Y/rEfrTmuw\nSROUeuVCj9sN8pW7p6y5xddoy1IMBSRpFXfsfdx1l8cjN3rBIMY2xt4F2YnVxeUb\nrVTfAYBEaSFE4emPvFIRf9/X2o/jtRYEQm1+Q6HjnRsUhdHRPYq37y/woXhKtQSk\nT6F2YyoaKzkH8buBVsoEcTTpTCRvM3lboOA8FesHWePZejnJYoXLHO3qY+nsPrjo\nDJ8J6Jp5TiyZj6mYWcIdfFY99BUTFOry1lURCe0rPKWDU4fczF86opG3pamvTUit\n3bbtvtUdeXFIr2qsMPd0cyhPSFu4mNyPyitGZ50/7Il+kB3RSGVt89kSwqMAps/q\nJSGUJLcSoOc1qGODHwXsCE61DvEgaWcFXLqNlMBzRChyLsLGLaKs6JskettLPjwh\njRbnnOOTk3K3xZI7EIxExh+9obLNzAk6jRLn0mmGRyXw4UMLvvQ=\n=xH3y\n-----END PGP SIGNATURE-----",
+          "payload": "tree de448bcd208b2a973ca2c232bd5c5e17526711c6\nparent 15a6c9e020569f24a5fe43489ae7f54c86c47b8d\nauthor Ryan Eakman <6326532+eakmanrq@users.noreply.github.com> 1789244572 +0000\ncommitter fa-assistant <dev-qarp+fa-assistant@dbtlabs.com> 1789246562 +0000\n\nfeat: bind dbt artifacts to prepared invocations\n\n* feat: bind dbt artifacts to prepared invocations\n\nGive every dbt child one prepared description of where its artifacts\nwill land and route every consumer through it. `PreparedInvocation`\nsnapshots the selected project, the invocation cwd, the effective\nenvironment (inherited values, the selected project's filtered .env,\nFusion's invocation-cwd dotenv fallback and DBT_ENGINE_* alias\npromotion), the launch argv and the resolved target, metadata,\nindex-output, compare-results and context paths, following dbt's own\nprecedence (explicit --target-path, DBT_ENGINE_TARGET_PATH for Fusion,\nDBT_TARGET_PATH, Core YAML target-path rendered with the accepted\nenv_var/var subset, then target/). MCP tools, exec_dbt, compare, show,\nlint, the native Codex handlers, the Codex startup launches and the\nWizard direct query launcher launch from the prepared argv and refresh\nfrom the prepared source; the SDK gains Project::ingest_from_prepared.\n\nA successful command that produced nothing new no longer re-ingests\nunrelated artifacts, and a Fusion command that produced a different\nmetadata source is loaded into a fresh database and swapped in whole.\nStartup and discovery resolve the configured cache per executable\nfamily (index_dir_for_kind/target_dir_for_kind), Fusion workspaces\nstay out of the Core JSON bootstrap path, and artifact metadata records\nthe source identity so a restart keeps a redirected source.\n\nConsistency is single-process by design: an in-process ordering token\nunder the existing project lock rejects late older completions; across\nprocesses the last writer wins. Cross-process coherence is tracked in a\nfollow-up issue; the earlier in-PR attempt is archived on\neakmanrq/wizard-dbt-artifact-environment-publication-wip.\n\nAdds a real Fusion artifact-parity test (default, explicit, .env plain\nand alias, invocation-cwd alias promotion over the selected project's\nplain value, structured explicit target, YAML and empty rejections,\nSDK ingest from the prepared source), required in the Test dbt-index\njob.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01UzzKgfugfXyuZLdS7ayB2q\n\n* fix: address PR 14828 review feedback\n\n* fix: run a query against its own environment's project\n\n`run_show_with_manager` selected `root_project_dir` as the prepared\ninvocation's project, falling back to `cwd`. `root_project_dir` is not\nthe selected project: `worktree::handlers::query_paths` builds it as the\nproject directory inside the *source checkout* (`repo_root` + the\nproject's relative path), while `cwd` is the same project inside the\nenvironment's worktree.\n\nA SQL query run from an isolated environment therefore launched\n`dbt show` with `--project-dir <source checkout project>` and the source\ncheckout's `.env`, and anchored the target/index paths there, while the\nchild's cwd stayed the worktree \u2014 compiling against the main checkout's\nmodels and macros instead of the environment's edits. For the default\nenvironment `cwd == root_project_dir`, so the defect was invisible\nthere.\n\nSelect `cwd`. `root_project_dir` keeps the two roles it has everywhere\nelse in this file: a fallback for locating the dbt binary/venv\n(`resolve_dbt_for_query`) and a second entry in the profile search order\n(`profiles_dir_for_resolve`).\n\nThe existing test pinned the defect \u2014 it passed a worktree as `cwd`, a\ndifferent directory as `root_project_dir`, and asserted `--project-dir`\nand the `.env` of that other directory. It now pins the contract: when\n`cwd != root_project_dir` the child gets `--project-dir <cwd>`, the\nworktree's `.env`, the worktree as its cwd, and no trace of the source\ncheckout.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01StAPotBfr3eXAqgKa1YfYQ\n\n* fix: reconcile prepared invocations with main's add_project and compare work\n\nFollow-on to the rebase resolution, where main and this branch had changed\nthe same code paths:\n\n- `add_project` keeps main's result binding and tool-list-changed\n  notification while routing initialization through the shared\n  `init_project`, and re-applies the directory-basename alias that\n  `init_project` leaves unset.\n- `run_inner` keeps main's derived primary workspace key; the\n  configured-name binding this branch added is redundant against it.\n- `FusionProjectOverride` is removed: the active-source binding\n  introduced here swaps a redirected Fusion metadata source into a fresh\n  database instead of layering a delta stream over the configured one.\n- The compare handler keeps main's capability preflight and outcome enum\n  and takes its results path from the prepared invocation's artifact\n  source; main's relocated-target test is ported onto that binding with a\n  Core binary, since Fusion rejects a non-default YAML `target-path`.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n* fix: refresh the codex-rs lock for the metadata-parquet dependency\n\n`crates/dbt-index` now depends on `dbt-metadata-parquet`, which resolves\ninto the separate `wizard/dbt-codex/codex-rs` workspace through its path\ndeps. The \"Verify codex-rs Cargo.lock\" job runs `cargo metadata --locked`\nthere, so the refreshed entry has to be committed.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n* fix: resolve the equals-option project dir test on Windows\n\n`prepared_raw_target_path_survives_equals_option` passed a literal\n`--project-dir=/tmp/project`. On Windows that path has a root but no\ndrive, so it is not absolute and resolves against the invocation cwd\nrather than staying put. It now uses a real absolute directory under the\ntest's temporary root, matching the boolean-defer sibling test.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n* fix: build v2 against current main on Linux and Windows\n\n- #14870 added three `workspace_prod_parse_gates_on_workspace_options`\n  calls to `run_workspace_prod_parse` with the five-argument signature;\n  this branch adds a `binary_kind` parameter. They pass\n  `DbtBinaryKind::Core`, like the other test in that module. The tests\n  count logged lines that are exactly `parse`, so the `--project-dir`\n  arguments Core adds do not affect them.\n- `project_fixture` only creates directories and writes `.env`, but was\n  `cfg(unix)` alongside the shell-script `fake_dbt` helper, so the\n  prepared-invocation tests that call it failed to build on Windows.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n* fix: compare artifact paths canonically across spellings\n\nArtifact sources anchor on a project's canonical path, which expands\nWindows 8.3 short names (`ADMINI~1`) and resolves macOS's `/var` to\n`/private/var`. Windows CI surfaced one product bug and a set of tests\nthat assumed the raw temporary-directory spelling.\n\nProduct: workspace-scan deduplication compared the caller's `--db`\nspelling against a scanned index resolved through the canonical project,\nso the primary index was registered twice and a single-project call that\nomits `project` failed. Both sides now go through `sdk::comparable_path`,\nwhich canonicalizes the longest existing ancestor with the same resolver\nthe artifact source uses and re-appends the not-yet-created remainder.\n`workspace_scan_deduplicates_the_primary_index` still uses a raw\n`TempDir`, so it guards this case; it fails without the fix under a\nsymlinked `TMPDIR`.\n\nTests: fixtures that compare resolved artifact paths now create their\ntemporary root at its canonical spelling, and the persisted Fusion source\nidentity is compared as a parsed path rather than a substring of JSON,\nwhich escapes Windows separators. This includes unix-only tests that\nwould break on macOS, where the macOS job runs on pushes to main.\n\nThe whole dbt-index suite passes with a symlinked `TMPDIR` standing in\nfor the short-name and `/private` spellings.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Epo2cGd2AtQr5yJDnybdnu\n\n---------\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>\nGitOrigin-RevId: 14ce4bbd152c3bea8d2f0d0772710b9990f45e54\n",
+          "verified_at": "2026-09-12T20:56:05Z"
+        }
+      },
+      "url": "https://api.github.com/repos/dbt-labs/dbt/commits/95bc45a49210229a43005f8e1e4bbb1358c11304",
+      "html_url": "https://github.com/dbt-labs/dbt/commit/95bc45a49210229a43005f8e1e4bbb1358c11304",
+      "comments_url": "https://api.github.com/repos/dbt-labs/dbt/commits/95bc45a49210229a43005f8e1e4bbb1358c11304/comments",
+      "author": {
+        "login": "eakmanrq",
+        "id": 6326532,
+        "node_id": "MDQ6VXNlcjYzMjY1MzI=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/6326532?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/eakmanrq",
+        "html_url": "https://github.com/eakmanrq",
+        "followers_url": "https://api.github.com/users/eakmanrq/followers",
+        "following_url": "https://api.github.com/users/eakmanrq/following{/other_user}",
+        "gists_url": "https://api.github.com/users/eakmanrq/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/eakmanrq/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/eakmanrq/subscriptions",
+        "organizations_url": "https://api.github.com/users/eakmanrq/orgs",
+        "repos_url": "https://api.github.com/users/eakmanrq/repos",
+        "events_url": "https://api.github.com/users/eakmanrq/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/eakmanrq/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "fa-assistant",
+        "id": 77991023,
+        "node_id": "MDQ6VXNlcjc3OTkxMDIz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/77991023?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/fa-assistant",
+        "html_url": "https://github.com/fa-assistant",
+        "followers_url": "https://api.github.com/users/fa-assistant/followers",
+        "following_url": "https://api.github.com/users/fa-assistant/following{/other_user}",
+        "gists_url": "https://api.github.com/users/fa-assistant/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/fa-assistant/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/fa-assistant/subscriptions",
+        "organizations_url": "https://api.github.com/users/fa-assistant/orgs",
+        "repos_url": "https://api.github.com/users/fa-assistant/repos",
+        "events_url": "https://api.github.com/users/fa-assistant/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/fa-assistant/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "15a6c9e020569f24a5fe43489ae7f54c86c47b8d",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/commits/15a6c9e020569f24a5fe43489ae7f54c86c47b8d",
+          "html_url": "https://github.com/dbt-labs/dbt/commit/15a6c9e020569f24a5fe43489ae7f54c86c47b8d"
+        }
+      ]
+    },
+    {
+      "sha": "15a6c9e020569f24a5fe43489ae7f54c86c47b8d",
+      "node_id": "C_kwDOAzEXQ9oAKDE1YTZjOWUwMjA1NjlmMjRhNWZlNDM0ODlhZTdmNTRjODZjNDdiOGQ",
+      "commit": {
+        "author": {
+          "name": "milevin",
+          "email": "35362064+milevin@users.noreply.github.com",
+          "date": "2026-09-12T15:57:43Z"
+        },
+        "committer": {
+          "name": "fa-assistant",
+          "email": "dev-qarp+fa-assistant@dbtlabs.com",
+          "date": "2026-09-12T16:29:14Z"
+        },
+        "message": "fix(dbt-compute): stop skipping the debug propagation check when no CLD is declared\n\nThe `dbt debug` Snowflake propagation check was gated on a catalog-linked\ndatabase declared in catalogs.yml, which lake compute no longer requires.\nRun it whenever a checker is registered instead, using the same relation\nquoting and credential-mapping helpers a real model write uses, and mask\nthe probe's timestamped table name in the record/replay comparison paths\nso the fixture stays deterministic.\n\nGitOrigin-RevId: 8b3866f7cc542ec41c3ca08edfe491cf191642c5",
+        "tree": {
+          "sha": "236fcbdfbc044b563d76d21fd29ed4f233bdb75a",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/git/trees/236fcbdfbc044b563d76d21fd29ed4f233bdb75a"
+        },
+        "url": "https://api.github.com/repos/dbt-labs/dbt/git/commits/15a6c9e020569f24a5fe43489ae7f54c86c47b8d",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCgAdFiEEMGb0Yq0m2eumOSAUPJ5bGwzFlFgFAmqlfdoACgkQPJ5bGwzF\nlFh+YQ//Wz7itoaxv5EUNDT5umHiucB8Z8ONaqGHU3fGFbCLdCtJiEibFx7pJ9Um\nxy3YQbH6ML3r1VS78OCZBUSpxXA3NAFaYTMH7bmGzwVbaAXbmwhDwXCCo04bcuOa\nlc9rwEiM3QbhnEjF6OANEcBVRgXSP3upoFJCcXYZzMv0TxTT0lv2tolcWm+3ngsn\nigX9xw6wqmSqCg/5+S07bEqt7nfwsUvtMhyzx045EOZqCiJTUyaDrCF3aN06+tk/\ni7hEb69OeJJJJtl3ZiBfzt/1IXwThfgrA2jK4jwJyfmBpndAIW1EGtoixfv6YUCb\n3c5zs+bWY33NA5OsxTQeQP7Gzfrz/2H4qwC3CKy2xZz8jZmPFyu1cNsUVpBwsmAv\n2WWNdG98mW8xM1hvZ6188EanY3VGYjIXaqW4IbjlxQ2oqZucKkZCQuuGQyPP5sZ6\nX85+p+x1e5TAXQ0ogRLiW36tVIPZQn0P6q3QN8cZnpmNkZTUblNymlxocYz0R4ge\nLwpSeXENJtr7OtdzPmUYU5+MqqFJiAHCquLLlUXdo056Q62Ao0zaK+UcN/kMcYDu\nDVP+ucc2Yt/cGCN/tSip1ktI4F90ZzUXWZq64tbwr4CJ0NzWbOXvoCjyHJSxAvRA\nSQPPPATcy/1PiJhPxDvNpl5M12LWxYx/XaV06GlTvyTlEgHZWQE=\n=yOxG\n-----END PGP SIGNATURE-----",
+          "payload": "tree 236fcbdfbc044b563d76d21fd29ed4f233bdb75a\nparent 35c2870936caec007c3e8a843104fc6b292b52df\nauthor milevin <35362064+milevin@users.noreply.github.com> 1789228663 +0000\ncommitter fa-assistant <dev-qarp+fa-assistant@dbtlabs.com> 1789230554 +0000\n\nfix(dbt-compute): stop skipping the debug propagation check when no CLD is declared\n\nThe `dbt debug` Snowflake propagation check was gated on a catalog-linked\ndatabase declared in catalogs.yml, which lake compute no longer requires.\nRun it whenever a checker is registered instead, using the same relation\nquoting and credential-mapping helpers a real model write uses, and mask\nthe probe's timestamped table name in the record/replay comparison paths\nso the fixture stays deterministic.\n\nGitOrigin-RevId: 8b3866f7cc542ec41c3ca08edfe491cf191642c5\n",
+          "verified_at": "2026-09-12T16:29:17Z"
+        }
+      },
+      "url": "https://api.github.com/repos/dbt-labs/dbt/commits/15a6c9e020569f24a5fe43489ae7f54c86c47b8d",
+      "html_url": "https://github.com/dbt-labs/dbt/commit/15a6c9e020569f24a5fe43489ae7f54c86c47b8d",
+      "comments_url": "https://api.github.com/repos/dbt-labs/dbt/commits/15a6c9e020569f24a5fe43489ae7f54c86c47b8d/comments",
+      "author": {
+        "login": "milevin",
+        "id": 35362064,
+        "node_id": "MDQ6VXNlcjM1MzYyMDY0",
+        "avatar_url": "https://avatars.githubusercontent.com/u/35362064?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/milevin",
+        "html_url": "https://github.com/milevin",
+        "followers_url": "https://api.github.com/users/milevin/followers",
+        "following_url": "https://api.github.com/users/milevin/following{/other_user}",
+        "gists_url": "https://api.github.com/users/milevin/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/milevin/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/milevin/subscriptions",
+        "organizations_url": "https://api.github.com/users/milevin/orgs",
+        "repos_url": "https://api.github.com/users/milevin/repos",
+        "events_url": "https://api.github.com/users/milevin/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/milevin/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "fa-assistant",
+        "id": 77991023,
+        "node_id": "MDQ6VXNlcjc3OTkxMDIz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/77991023?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/fa-assistant",
+        "html_url": "https://github.com/fa-assistant",
+        "followers_url": "https://api.github.com/users/fa-assistant/followers",
+        "following_url": "https://api.github.com/users/fa-assistant/following{/other_user}",
+        "gists_url": "https://api.github.com/users/fa-assistant/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/fa-assistant/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/fa-assistant/subscriptions",
+        "organizations_url": "https://api.github.com/users/fa-assistant/orgs",
+        "repos_url": "https://api.github.com/users/fa-assistant/repos",
+        "events_url": "https://api.github.com/users/fa-assistant/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/fa-assistant/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "35c2870936caec007c3e8a843104fc6b292b52df",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/commits/35c2870936caec007c3e8a843104fc6b292b52df",
+          "html_url": "https://github.com/dbt-labs/dbt/commit/35c2870936caec007c3e8a843104fc6b292b52df"
+        }
+      ]
+    },
+    {
+      "sha": "35c2870936caec007c3e8a843104fc6b292b52df",
+      "node_id": "C_kwDOAzEXQ9oAKDM1YzI4NzA5MzZjYWVjMDA3YzNlOGE4NDMxMDRmYzZiMjkyYjUyZGY",
+      "commit": {
+        "author": {
+          "name": "milevin",
+          "email": "35362064+milevin@users.noreply.github.com",
+          "date": "2026-09-12T06:18:17Z"
+        },
+        "committer": {
+          "name": "fa-assistant",
+          "email": "dev-qarp+fa-assistant@dbtlabs.com",
+          "date": "2026-09-12T06:50:22Z"
+        },
+        "message": "fix(lake_compute): scope Snowflake catalog attach to what a node actually needs\n\n* fix(lake_compute): scope Snowflake catalog attach to what a node actually needs\n\nTwo bugs in catalog_bundle_json compounded into generic tests crashing\nwith \"catalog bundle credential missing 'account'\":\n\n- iceberg_upstream_databases only looked up upstreams in nodes.models,\n  so a seed landing in Iceberg via its own catalog_name was invisible\n  to the traversal deciding whether a credential is needed.\n- The declared-catalogs loop attached every non-Glue entry in\n  catalogs.yml to every bundle unconditionally, regardless of whether\n  the node being executed had any dependency on it.\n\nFix both by computing one needed_databases set (upstream deps plus the\nnode's own catalog_name, if any) and having both the credential-mint\ndecision and the declared-catalog filter consult it, instead of each\nre-deriving its own notion of \"needed\". Also centralizes the\ncase-insensitive catalog_database comparisons (mirroring the backend's\nunquoted-identifier upper-folding) into one normalize_catalog_database\nhelper instead of three inline call sites.\n\nDeliberately Snowflake-only in iceberg_upstream_databases, not\nLakeCompute too: anything LakeCompute itself materialized is already\nvisible to the backend's MDLS D.S.T fold regardless of its own\ncatalog_name/table_format, so it never needs a Snowflake attach of its\nown. Only a genuinely external Snowflake-adapter upstream needs one.\n\n* test(lake_compute): add unrelated Glue and horizon catalogs to seed_demo fixture\n\nMirrors the shape that exposed the credential-scoping bug: a project with\nextra catalogs.yml entries (GLUE_SOURCE, horizon_test) that no model in\nthis fixture actually depends on. Before the compute_platform.rs fix,\ndeclaring horizon_test alone was enough to force a Snowflake credential\nrequirement onto every generic test in the project, regardless of\nrelevance.\n\n* Bumps LAKE_COMPUTE_DRIVER_VERSION to the artifacts released by dbt-labs/fs run 34657070835\n\n0.4.0+dbt0.1.9.g765633c -> 0.4.0+dbt0.1.10.g53736d6, carrying the\nadbc-driver-dbt fix that requires account/role lazily at point of use\nin CATALOG_BUNDLE handling (quack fix/lakecompute-catalog-bundle-account).\n\n* Undoing inadvertent rename\n\nGitOrigin-RevId: 96b5c37ebb03c6c29d41ce19b01c39cfcb1134a9",
+        "tree": {
+          "sha": "bd5fd8d94bd8a0cd98dc98ce139be83d7debae93",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/git/trees/bd5fd8d94bd8a0cd98dc98ce139be83d7debae93"
+        },
+        "url": "https://api.github.com/repos/dbt-labs/dbt/git/commits/35c2870936caec007c3e8a843104fc6b292b52df",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCgAdFiEEMGb0Yq0m2eumOSAUPJ5bGwzFlFgFAmqk9i4ACgkQPJ5bGwzF\nlFgsKhAApbLOcVZ/fb55wH4te+ryk68CjQxC9kg2BfXtvd5eVrZcL6HaXJvYaNMv\n5w4qpFIvtk98RohxPRiFmPnR6jHkIL0O11YiLwYPHE3N3rMqXaOC6m2ODPeNgpZa\ndx0tBHef8ZXpDqQRTQOahWnlBouCormi1Mml8UhY/5bwPWZp4a/Yxv1htuD/vRqd\n0l5EPuw5FZWnYuHkbwC12tUzhNV4TJ9+Q1+WcqBHInQtWEveV5Kuge5hxM3A2x9W\nsLRithwSsSY2gD9xzbVWvQwM0+gcvcTYy1PC413IoyUdARgglH5eUTe+0DVxSn1L\nu6OjnEnrEHXOdzsx1WSD3adPcqS1bO+iEIJ2z+RyzDnxl6+I2BbwnfTQu32qfYku\nIKc0Irzbhltd71t+Frd1aaGXDiYTsxEoYkw6pnl4CnIrxsVfqjbL+SCp5sIv97NF\n0FPzRGCmg8/XUb5g5AsBpDt9rYbLUe9asFi2ZXHb8eis2Qjgaf1Dw3riKM5ff2mY\nSwqbgmrlNZ6i/13L0WNxR2jhVAUvYzGzcgbaL+L3/UrnmLZXGkrb7tiJI2M+tjVO\nO4KNTJdNntf0qj7+dekY+Kt5NMYhF8oNQ2KceqRjzUPhlzth8U1F87WaFl/zWK48\ndL/injI5ISRWF3JaKtYejmK/n2498DHYEPQS/rpbKWBwZxL7o6k=\n=9zCF\n-----END PGP SIGNATURE-----",
+          "payload": "tree bd5fd8d94bd8a0cd98dc98ce139be83d7debae93\nparent c86b81ce605df4d8e4b88dad52ae36105039727e\nauthor milevin <35362064+milevin@users.noreply.github.com> 1789193897 +0000\ncommitter fa-assistant <dev-qarp+fa-assistant@dbtlabs.com> 1789195822 +0000\n\nfix(lake_compute): scope Snowflake catalog attach to what a node actually needs\n\n* fix(lake_compute): scope Snowflake catalog attach to what a node actually needs\n\nTwo bugs in catalog_bundle_json compounded into generic tests crashing\nwith \"catalog bundle credential missing 'account'\":\n\n- iceberg_upstream_databases only looked up upstreams in nodes.models,\n  so a seed landing in Iceberg via its own catalog_name was invisible\n  to the traversal deciding whether a credential is needed.\n- The declared-catalogs loop attached every non-Glue entry in\n  catalogs.yml to every bundle unconditionally, regardless of whether\n  the node being executed had any dependency on it.\n\nFix both by computing one needed_databases set (upstream deps plus the\nnode's own catalog_name, if any) and having both the credential-mint\ndecision and the declared-catalog filter consult it, instead of each\nre-deriving its own notion of \"needed\". Also centralizes the\ncase-insensitive catalog_database comparisons (mirroring the backend's\nunquoted-identifier upper-folding) into one normalize_catalog_database\nhelper instead of three inline call sites.\n\nDeliberately Snowflake-only in iceberg_upstream_databases, not\nLakeCompute too: anything LakeCompute itself materialized is already\nvisible to the backend's MDLS D.S.T fold regardless of its own\ncatalog_name/table_format, so it never needs a Snowflake attach of its\nown. Only a genuinely external Snowflake-adapter upstream needs one.\n\n* test(lake_compute): add unrelated Glue and horizon catalogs to seed_demo fixture\n\nMirrors the shape that exposed the credential-scoping bug: a project with\nextra catalogs.yml entries (GLUE_SOURCE, horizon_test) that no model in\nthis fixture actually depends on. Before the compute_platform.rs fix,\ndeclaring horizon_test alone was enough to force a Snowflake credential\nrequirement onto every generic test in the project, regardless of\nrelevance.\n\n* Bumps LAKE_COMPUTE_DRIVER_VERSION to the artifacts released by dbt-labs/fs run 34657070835\n\n0.4.0+dbt0.1.9.g765633c -> 0.4.0+dbt0.1.10.g53736d6, carrying the\nadbc-driver-dbt fix that requires account/role lazily at point of use\nin CATALOG_BUNDLE handling (quack fix/lakecompute-catalog-bundle-account).\n\n* Undoing inadvertent rename\n\nGitOrigin-RevId: 96b5c37ebb03c6c29d41ce19b01c39cfcb1134a9\n",
+          "verified_at": "2026-09-12T06:50:25Z"
+        }
+      },
+      "url": "https://api.github.com/repos/dbt-labs/dbt/commits/35c2870936caec007c3e8a843104fc6b292b52df",
+      "html_url": "https://github.com/dbt-labs/dbt/commit/35c2870936caec007c3e8a843104fc6b292b52df",
+      "comments_url": "https://api.github.com/repos/dbt-labs/dbt/commits/35c2870936caec007c3e8a843104fc6b292b52df/comments",
+      "author": {
+        "login": "milevin",
+        "id": 35362064,
+        "node_id": "MDQ6VXNlcjM1MzYyMDY0",
+        "avatar_url": "https://avatars.githubusercontent.com/u/35362064?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/milevin",
+        "html_url": "https://github.com/milevin",
+        "followers_url": "https://api.github.com/users/milevin/followers",
+        "following_url": "https://api.github.com/users/milevin/following{/other_user}",
+        "gists_url": "https://api.github.com/users/milevin/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/milevin/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/milevin/subscriptions",
+        "organizations_url": "https://api.github.com/users/milevin/orgs",
+        "repos_url": "https://api.github.com/users/milevin/repos",
+        "events_url": "https://api.github.com/users/milevin/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/milevin/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "fa-assistant",
+        "id": 77991023,
+        "node_id": "MDQ6VXNlcjc3OTkxMDIz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/77991023?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/fa-assistant",
+        "html_url": "https://github.com/fa-assistant",
+        "followers_url": "https://api.github.com/users/fa-assistant/followers",
+        "following_url": "https://api.github.com/users/fa-assistant/following{/other_user}",
+        "gists_url": "https://api.github.com/users/fa-assistant/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/fa-assistant/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/fa-assistant/subscriptions",
+        "organizations_url": "https://api.github.com/users/fa-assistant/orgs",
+        "repos_url": "https://api.github.com/users/fa-assistant/repos",
+        "events_url": "https://api.github.com/users/fa-assistant/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/fa-assistant/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "c86b81ce605df4d8e4b88dad52ae36105039727e",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/commits/c86b81ce605df4d8e4b88dad52ae36105039727e",
+          "html_url": "https://github.com/dbt-labs/dbt/commit/c86b81ce605df4d8e4b88dad52ae36105039727e"
+        }
+      ]
+    },
+    {
+      "sha": "c86b81ce605df4d8e4b88dad52ae36105039727e",
+      "node_id": "C_kwDOAzEXQ9oAKGM4NmI4MWNlNjA1ZGY0ZDhlNGI4OGRhZDUyYWUzNjEwNTAzOTcyN2U",
+      "commit": {
+        "author": {
+          "name": "fa-assistant",
+          "email": "77991023+fa-assistant@users.noreply.github.com",
+          "date": "2026-09-11T23:40:43Z"
+        },
+        "committer": {
+          "name": "fa-assistant",
+          "email": "dev-qarp+fa-assistant@dbtlabs.com",
+          "date": "2026-09-12T00:19:10Z"
+        },
+        "message": "chore: post-release 2.0.1 (version bump + changelog)\n\n* chore: prepare release 2.0.1\n\nRelease tag: v2.0.1\nRelease workflow: https://github.com/dbt-labs/fs/actions/runs/34649124512\n\nCo-Authored-By: GitHub Actions <github-actions@github.com>\n\n* update changelog for 2.0.1\n\n---------\n\nCo-authored-by: GitHub Actions <github-actions@github.com>\nGitOrigin-RevId: 8a3929eee9c531af6515329c1446fa2bc219afdf",
+        "tree": {
+          "sha": "ff47c8926dcafb6f8a8436abef51bba28b1a89c3",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/git/trees/ff47c8926dcafb6f8a8436abef51bba28b1a89c3"
+        },
+        "url": "https://api.github.com/repos/dbt-labs/dbt/git/commits/c86b81ce605df4d8e4b88dad52ae36105039727e",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCgAdFiEEMGb0Yq0m2eumOSAUPJ5bGwzFlFgFAmqkmn4ACgkQPJ5bGwzF\nlFhwNg//comcVMqr+xQMfMpDxtXuRS2xsRJkfBpAOE2Gcx/fNGq0ULaEnv1MA8tx\nwdYfnidYv8oF0sC61oOkC2grUpCOd6GXdoIZQxxsQSh9GpHU5xXu233pgJKStBHv\n9VxH8mbZFbaX7dMlOLkbYYhWgk/zellROqCHtNwaK2BoWM6uBXEnvKZ2S4CW4lO9\nK1SIekthSDUMsqwBqaOWdhM2tPVqa8g/lFjKd0ElJYEm+b+nV26GFZoMtUhfusRk\ng5Q3y6v4dTCZVAvoHxvP61m5jyNcXfeQJE/Y6JCOlWwgYN7mOzlpPpiNb3DrIrp9\nBfkr2g6bFr2I8QbR3QOvJcvc5d9MO/4QMLAFeh3xiDpSgNVWspwYGNxPi2+RvRTq\ni7koAhJqYDrNyqdq2t5GOVB/zvoh+ofRzeJN6uModES4vf8TyYTPuUuHd4MEH6Fq\nNLnHu/ofMscN/uU2GMSfHH+SDl25CdwrcenTMglaAM1Kd8wr+SvmbDPUoxNn/MJg\n868dRH98s3b7K9HH8NJ49f/7h3OD1IoICdVzxf+wO++TFlP1/qV8tBg6+OzNucEW\nQbrBSdj2XdUYXL9EpFCGauTVqzajEhkIOgwMkNlTlANzFprP96ki1bkIE5Bl+OnW\n+fefTBLB98YX0sP7KieLeC1m5tjJz+R3vk7B8iH0vQ2yUFL8ATU=\n=fRJb\n-----END PGP SIGNATURE-----",
+          "payload": "tree ff47c8926dcafb6f8a8436abef51bba28b1a89c3\nparent 8105e50b79985275a686d9925747ffcb0965dcfa\nauthor fa-assistant <77991023+fa-assistant@users.noreply.github.com> 1789170043 +0000\ncommitter fa-assistant <dev-qarp+fa-assistant@dbtlabs.com> 1789172350 +0000\n\nchore: post-release 2.0.1 (version bump + changelog)\n\n* chore: prepare release 2.0.1\n\nRelease tag: v2.0.1\nRelease workflow: https://github.com/dbt-labs/fs/actions/runs/34649124512\n\nCo-Authored-By: GitHub Actions <github-actions@github.com>\n\n* update changelog for 2.0.1\n\n---------\n\nCo-authored-by: GitHub Actions <github-actions@github.com>\nGitOrigin-RevId: 8a3929eee9c531af6515329c1446fa2bc219afdf\n",
+          "verified_at": "2026-09-12T00:19:14Z"
+        }
+      },
+      "url": "https://api.github.com/repos/dbt-labs/dbt/commits/c86b81ce605df4d8e4b88dad52ae36105039727e",
+      "html_url": "https://github.com/dbt-labs/dbt/commit/c86b81ce605df4d8e4b88dad52ae36105039727e",
+      "comments_url": "https://api.github.com/repos/dbt-labs/dbt/commits/c86b81ce605df4d8e4b88dad52ae36105039727e/comments",
+      "author": {
+        "login": "fa-assistant",
+        "id": 77991023,
+        "node_id": "MDQ6VXNlcjc3OTkxMDIz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/77991023?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/fa-assistant",
+        "html_url": "https://github.com/fa-assistant",
+        "followers_url": "https://api.github.com/users/fa-assistant/followers",
+        "following_url": "https://api.github.com/users/fa-assistant/following{/other_user}",
+        "gists_url": "https://api.github.com/users/fa-assistant/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/fa-assistant/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/fa-assistant/subscriptions",
+        "organizations_url": "https://api.github.com/users/fa-assistant/orgs",
+        "repos_url": "https://api.github.com/users/fa-assistant/repos",
+        "events_url": "https://api.github.com/users/fa-assistant/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/fa-assistant/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "fa-assistant",
+        "id": 77991023,
+        "node_id": "MDQ6VXNlcjc3OTkxMDIz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/77991023?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/fa-assistant",
+        "html_url": "https://github.com/fa-assistant",
+        "followers_url": "https://api.github.com/users/fa-assistant/followers",
+        "following_url": "https://api.github.com/users/fa-assistant/following{/other_user}",
+        "gists_url": "https://api.github.com/users/fa-assistant/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/fa-assistant/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/fa-assistant/subscriptions",
+        "organizations_url": "https://api.github.com/users/fa-assistant/orgs",
+        "repos_url": "https://api.github.com/users/fa-assistant/repos",
+        "events_url": "https://api.github.com/users/fa-assistant/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/fa-assistant/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "8105e50b79985275a686d9925747ffcb0965dcfa",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/commits/8105e50b79985275a686d9925747ffcb0965dcfa",
+          "html_url": "https://github.com/dbt-labs/dbt/commit/8105e50b79985275a686d9925747ffcb0965dcfa"
+        }
+      ]
+    },
+    {
+      "sha": "8105e50b79985275a686d9925747ffcb0965dcfa",
+      "node_id": "C_kwDOAzEXQ9oAKDgxMDVlNTBiNzk5ODUyNzVhNjg2ZDk5MjU3NDdmZmNiMDk2NWRjZmE",
+      "commit": {
+        "author": {
+          "name": "Kevin Zimmerman",
+          "email": "4733573+kczimm@users.noreply.github.com",
+          "date": "2026-09-11T19:52:54Z"
+        },
+        "committer": {
+          "name": "fa-assistant",
+          "email": "dev-qarp+fa-assistant@dbtlabs.com",
+          "date": "2026-09-11T20:25:28Z"
+        },
+        "message": "Fix flaky metadata replay test\n\nGitOrigin-RevId: 04e2734402e570c012d1b94c76d11d3efaa52168",
+        "tree": {
+          "sha": "61fb6ebd3c22698dec7bac2631b717bb347d29b3",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/git/trees/61fb6ebd3c22698dec7bac2631b717bb347d29b3"
+        },
+        "url": "https://api.github.com/repos/dbt-labs/dbt/git/commits/8105e50b79985275a686d9925747ffcb0965dcfa",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCgAdFiEEMGb0Yq0m2eumOSAUPJ5bGwzFlFgFAmqkY7gACgkQPJ5bGwzF\nlFhgRg//WFD/qVg9nhtKqF23cAtBeKv6//mKdYqnr9dF1c+HE0MCfRCX17ePtztl\nSuYcZ8CR1EEdTjjqCCG3un0RpR4wT5vKfLvFPPjIaoC7rTsq4HKAoVUW5Rr7o0NG\nvA4BCy2WfYKHAtQQHb6XeJ9fc8T52NYFa8RDnh1xELOhPP1oct9r4xyazjyEV24m\nBiX8DDAqi3Q1CO8QNtJCqIF4XcgCtS+vYN1y/oahZCf09rYfR1qaCClZ7lFJM3Mm\nBMVXrIVfIFba6T2CVBm0drW2sKQPYj5VCU14ZziRgJOJx1KzoUsdqP1/5uuardmh\nzCH0R3lBT9QI5WmUGO4M+Myfng8rkFl3UuapzahtsEzBYGDnoNGyzahRs/T8qw19\nngr3XePtIXhcYLkULwNqngxBkYNJatSUIHJRfswtec6W/+vI0BRv3jQfk82FSkWF\nI+BQq6BPHJmbXzz8FgjJAUAvNWz0/utu8E3RGno5eJEDKO8Ln1JngmfU/G0yUvKN\nR02yXOQ6XR8gq0qpHWJfJyiywVaLEHrTJjWba1d45VINHv3pWGxGQ8uODvInwe8G\n+hrQG4N1ICDMwCBpPVrxvGrbinDsGcd7vt/8t6ixnnWUgQstOsC0WnHwj0ZPrpqU\n1WUEvBA22kyGQ2yRty22OZY+7QbnpBphR8q6Q8v4iVadbuKayco=\n=PbcI\n-----END PGP SIGNATURE-----",
+          "payload": "tree 61fb6ebd3c22698dec7bac2631b717bb347d29b3\nparent 0d2dd9dc0faaf47fb417e95827482e2da749fbd0\nauthor Kevin Zimmerman <4733573+kczimm@users.noreply.github.com> 1789156374 +0000\ncommitter fa-assistant <dev-qarp+fa-assistant@dbtlabs.com> 1789158328 +0000\n\nFix flaky metadata replay test\n\nGitOrigin-RevId: 04e2734402e570c012d1b94c76d11d3efaa52168\n",
+          "verified_at": "2026-09-11T20:25:32Z"
+        }
+      },
+      "url": "https://api.github.com/repos/dbt-labs/dbt/commits/8105e50b79985275a686d9925747ffcb0965dcfa",
+      "html_url": "https://github.com/dbt-labs/dbt/commit/8105e50b79985275a686d9925747ffcb0965dcfa",
+      "comments_url": "https://api.github.com/repos/dbt-labs/dbt/commits/8105e50b79985275a686d9925747ffcb0965dcfa/comments",
+      "author": {
+        "login": "kczimm",
+        "id": 4733573,
+        "node_id": "MDQ6VXNlcjQ3MzM1NzM=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/4733573?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/kczimm",
+        "html_url": "https://github.com/kczimm",
+        "followers_url": "https://api.github.com/users/kczimm/followers",
+        "following_url": "https://api.github.com/users/kczimm/following{/other_user}",
+        "gists_url": "https://api.github.com/users/kczimm/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/kczimm/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/kczimm/subscriptions",
+        "organizations_url": "https://api.github.com/users/kczimm/orgs",
+        "repos_url": "https://api.github.com/users/kczimm/repos",
+        "events_url": "https://api.github.com/users/kczimm/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/kczimm/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "fa-assistant",
+        "id": 77991023,
+        "node_id": "MDQ6VXNlcjc3OTkxMDIz",
+        "avatar_url": "https://avatars.githubusercontent.com/u/77991023?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/fa-assistant",
+        "html_url": "https://github.com/fa-assistant",
+        "followers_url": "https://api.github.com/users/fa-assistant/followers",
+        "following_url": "https://api.github.com/users/fa-assistant/following{/other_user}",
+        "gists_url": "https://api.github.com/users/fa-assistant/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/fa-assistant/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/fa-assistant/subscriptions",
+        "organizations_url": "https://api.github.com/users/fa-assistant/orgs",
+        "repos_url": "https://api.github.com/users/fa-assistant/repos",
+        "events_url": "https://api.github.com/users/fa-assistant/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/fa-assistant/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "0d2dd9dc0faaf47fb417e95827482e2da749fbd0",
+          "url": "https://api.github.com/repos/dbt-labs/dbt/commits/0d2dd9dc0faaf47fb417e95827482e2da749fbd0",
+          "html_url": "https://github.com/dbt-labs/dbt/commit/0d2dd9dc0faaf47fb417e95827482e2da749fbd0"
+        }
+      ]
+    }
+  ]
+}

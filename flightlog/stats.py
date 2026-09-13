@@ -67,10 +67,18 @@ class ResourceStats:
     # which is not the same as zero pages available.
     pages_available: int | None = None
     records_retrieved: int = 0
+    
     # Set when MAX_PAGES stopped the pull, or when any other early exit did.
     # Kept separately from the pages comparison because the report should be
     # able to say WHY a pull was incomplete, not merely that it was.
     stopped_early_reason: str | None = None
+
+    # Per-resource, not per-run. A single shared ValidationStats divides every
+    # null count by the total records from EVERY resource — so merged_at, which
+    # exists only on pull requests, was reported as null in 37.2% of 600
+    # records when the true figure is 74.3% of the 300 pull requests. Plausible,
+    # precise, and wrong by a factor of two.
+    validation: ValidationStats = field(default_factory=ValidationStats)
 
     @property
     def complete(self) -> bool:
@@ -116,11 +124,6 @@ class RunStats:
 
     rate_limit: RateLimitState = field(default_factory=RateLimitState)
     retries: RetryStats = field(default_factory=RetryStats)
-    # Validation outcomes for the whole run. One set rather than one per
-    # resource: commits and pull requests have different schemas, but the
-    # report wants a single "how many records were rejected and why", and the
-    # rejections themselves name the field that failed.
-    validation: ValidationStats = field(default_factory=ValidationStats)
 
     resources: dict[str, ResourceStats] = field(default_factory=dict)
     failures: list[FailedRequest] = field(default_factory=list)
@@ -165,6 +168,16 @@ class RunStats:
     @property
     def total_pages(self) -> int:
         return sum(r.pages_fetched for r in self.resources.values())
+
+    @property
+    def total_records_checked(self) -> int:
+        """Records validated across every resource."""
+        return sum(r.validation.records_checked for r in self.resources.values())
+
+    @property
+    def total_records_rejected(self) -> int:
+        """Records that failed validation across every resource."""
+        return sum(r.validation.records_rejected for r in self.resources.values())
 
     @property
     def complete(self) -> bool:

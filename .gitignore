@@ -18,3 +18,4 @@ htmlcov/
 *.db
 data/
 probe-output.txt
+reports/

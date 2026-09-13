@@ -223,3 +223,43 @@ as a failed run.
 
 Caught by reading the per-page output rather than only the summary. The summary
 said "67 of 67, complete, exit 0" and was entirely accurate.
+
+## 2026-09-13 — Null rates were divided by the wrong denominator
+
+When the report gained a second resource, the null rates became wrong in a way
+that read as entirely plausible. `RunStats` held one shared `ValidationStats`,
+so every null count was divided by the total records from every resource.
+`merged_at` — a field that exists only on pull requests — was reported as null
+in 37.2% of 600 records. The true figure was 223 of the 300 pull requests:
+74.3%.
+
+Precise, plausible, and wrong by a factor of two, in the section of the report
+whose entire purpose is making data quality visible. 48% versus 24% is the
+difference between "most PRs are not merged, as expected" and "something
+changed upstream".
+
+Fixed by moving `ValidationStats` onto `ResourceStats`, so each rate is against
+its own denominator, and by naming the resource in every warning.
+
+Caught by reading the report's numbers against what was known about the data
+rather than checking only that the report rendered.
+
+## 2026-09-13 — A regex that removed dead functions removed main() as well
+
+Four superseded functions needed deleting from `fetch.py` and two subcommands
+from `cli.py`. The assistant wrote a regex substitution to do it rather than
+giving line boundaries to edit by hand.
+
+The `fetch.py` pattern — from a `def` line to the next top-level `def` — worked
+for all four. The `cli.py` pattern for the subparser blocks matched greedily
+across the end of `build_parser` and consumed most of `main()`, leaving a file
+that raised `NameError: name 'main' is not defined`. The second subparser
+pattern matched nothing at all, which was the visible clue that the approach
+was unsound.
+
+Recovered with `git checkout flightlog/cli.py` and replaced the file wholesale.
+Committing after each increment is what made a one-command recovery possible.
+
+The lesson is about the tool, not the regex: structural edits to code call for
+whole-unit replacement or an AST-aware tool, not pattern matching across
+function boundaries. A greedy quantifier does not know where a function ends.

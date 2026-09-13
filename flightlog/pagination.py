@@ -20,9 +20,9 @@ from typing import Any, Iterator
 import requests
 
 from .config import Config
-from .errors import classify
-from .ratelimit import RateLimitState
-from .retry import RetryStats, with_retry
+from .errors import GitHubError, classify
+from .retry import with_retry
+from .stats import RunStats
 
 log = logging.getLogger(__name__)
 
@@ -103,12 +103,12 @@ def iter_pages(
     session: requests.Session,
     url: str,
     *,
+    resource: str,
     headers: dict[str, str],
     params: dict[str, Any] | None = None,
     max_pages: int | None = None,
     timeout: tuple[int, int] = (5, 30),
-    rate_limit: RateLimitState | None = None,
-    retry_stats: RetryStats | None = None,
+    stats: RunStats,
 ) -> Iterator[PageResult]:
     """Yield pages until the Link header stops offering a next one.
 
@@ -116,20 +116,21 @@ def iter_pages(
     records in memory at once. Against a repository with 200,000 commits that
     stops being academic.
 
-    rate_limit, if supplied, is checked before every request and updated after
-    every response. Passed in rather than created here so that a caller pulling
-    several resources — commits and pull requests both bill the `core` bucket —
-    shares one view of the quota instead of keeping two that each see half the
-    spend.
+    `resource` names which counter set this pull contributes to — "commits",
+    "pull_requests". Required rather than defaulted, because a mislabelled
+    resource silently merges two pulls into one set of counts, which is the
+    kind of wrong number that looks right.
 
-    retry_stats accumulates what the retry logic did, for the run report. Also
-    passed in, and for the same reason: the report wants one total across the
-    whole run, not one per resource.
+    `stats` is required, not optional. An earlier version made the accounting
+    optional and it was immediately clear that a fetch which might or might not
+    have counted is worse than one that always does — the report cannot say
+    "42 of 42 pages" if the caller forgot to pass a counter.
 
     max_pages caps the pull for development. It is NOT a safety net against a
     runaway loop: termination comes from the absence of rel="next", and if that
     logic were wrong a cap would only hide it at a different number.
     """
+    counters = stats.resource(resource)
     page_number = 1
     # Parameters apply to the FIRST request only. Every subsequent URL comes
     # from the Link header with its parameters already embedded, and passing
@@ -143,19 +144,42 @@ def iter_pages(
         timeout — with_retry takes a zero-argument callable precisely so that
         the retry policy knows nothing about HTTP.
 
-        The rate limit update happens here, before classify raises. A 403 for
-        quota exhaustion still carries the rate limit headers, and they are
-        exactly what is needed to know how long to wait — so they must be
-        captured before the exception unwinds the stack. On a retry that
-        matters even more: without it, the second attempt would be made
-        blind.
+        The rate limit update happens before classify raises. A 403 for quota
+        exhaustion still carries the rate limit headers, and they are exactly
+        what is needed to know how long to wait, so they must be captured
+        before the exception unwinds the stack.
         """
         response = session.get(
             request_url, headers=headers, params=request_params, timeout=timeout
         )
-        if rate_limit is not None:
-            rate_limit.update(response)
-        classify(response)
+        stats.rate_limit.update(response)
+
+        # Captured on every response, overwriting the previous value. GitHub
+        # reports it on each authenticated call and it does not change within a
+        # run; reading it here rather than in a special case keeps it simple.
+        expiry = response.headers.get("github-authentication-token-expiration")
+        if expiry:
+            stats.token_expires_at = expiry
+
+        try:
+            classify(response)
+        except GitHubError as exc:
+            # Recorded before re-raising, so the report knows about failures
+            # that a retry later fixed. A run that succeeded after three 502s
+            # is healthy in its result and unhealthy in its behaviour — a
+            # degrading integration looks fine right up until it stops working.
+            #
+            # The returned object is stashed on the exception so that the retry
+            # wrapper can mark it recovered without the accounting having to
+            # match failures to successes by URL.
+            exc.failure_record = stats.record_failure(
+                url=response.url,
+                status_code=response.status_code,
+                message=exc.message,
+                request_id=exc.request_id,
+            )
+            raise
+
         return response
 
     def wait_for_reset(_exc) -> float:
@@ -166,20 +190,16 @@ def iter_pages(
 
         threshold=0 because we are here having already been refused: the
         question is no longer "are we close to the limit" but "wait until it
-        resets". Passing the normal threshold would be checking a condition
-        that the refusal has already answered.
+        resets".
         """
-        if rate_limit is None:
-            return 0.0
-        return rate_limit.wait_if_needed(threshold=0)
+        return stats.rate_limit.wait_if_needed(threshold=0)
 
     while True:
         # Preemptive check, before the request rather than after a refusal.
         # No-op on the first iteration, when nothing is known yet.
-        if rate_limit is not None:
-            rate_limit.wait_if_needed()
+        stats.rate_limit.wait_if_needed()
 
-        log.debug("fetching page %d: %s", page_number, url)
+        log.debug("fetching %s page %d: %s", resource, page_number, url)
 
         # Bound at call time with default arguments rather than by closure.
         # A bare `lambda: fetch_one(url, next_params)` would capture the
@@ -189,9 +209,16 @@ def iter_pages(
         # answer rather than an error.
         response = with_retry(
             lambda u=url, p=next_params: fetch_one(u, p),
-            stats=retry_stats,
+            stats=stats.retries,
             on_rate_limit=wait_for_reset,
         )
+
+        # Anything recorded as a failure on an earlier attempt of this page was
+        # evidently transient, since this attempt returned. Marking them keeps
+        # "3 failures, all recovered" distinct from "3 failures, run aborted".
+        for failure in stats.failures:
+            if failure.url == response.url and not failure.recovered:
+                failure.recovered = True
 
         records = response.json()
         if not isinstance(records, list):
@@ -204,6 +231,17 @@ def iter_pages(
             )
 
         links = parse_link_header(response.headers.get("Link"))
+
+        # rel="last" appears on the first response and names the final page.
+        # Captured here rather than by the caller so that every consumer of
+        # iter_pages gets the completeness check for free.
+        if counters.pages_available is None and "last" in links:
+            tail = links["last"].split("page=")[-1].split("&")[0]
+            if tail.isdigit():
+                counters.pages_available = int(tail)
+
+        counters.pages_fetched += 1
+        counters.records_retrieved += len(records)
 
         yield PageResult(
             records=records,
@@ -226,16 +264,19 @@ def iter_pages(
         # moved from 41 pages to 42 between two runs minutes apart.
         next_url = links.get("next")
         if not next_url:
-            log.debug("no rel=next on page %d; result set exhausted", page_number)
+            log.debug("no rel=next on %s page %d; result set exhausted", resource, page_number)
             return
 
         if max_pages is not None and page_number >= max_pages:
             # Stopping early is a legitimate development mode, but it produces
             # an incomplete result set that looks exactly like a complete one.
-            # A warning, not a debug line.
+            # Recorded on the counters as well as logged, so the report states
+            # why the pull was short rather than only that it was.
+            counters.stopped_early_reason = f"MAX_PAGES={max_pages}"
             log.warning(
-                "stopping at page %d because MAX_PAGES=%d; "
+                "stopping at %s page %d because MAX_PAGES=%d; "
                 "a next page was available, so this result set is INCOMPLETE",
+                resource,
                 page_number,
                 max_pages,
             )

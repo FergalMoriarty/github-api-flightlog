@@ -149,3 +149,26 @@ regardless.
 constant's value when the function is defined. Rebinding the module attribute
 afterwards changes the attribute and nothing else. The same error had already
 been made with
+
+## 2026-09-13 — The completeness check reported success for a run that fetched nothing
+
+`ResourceStats.complete` treated an unknown page count as complete, on the
+reasoning that GitHub omits the `Link` header when a result set fits in one
+page. Sound for a small result set. False for a resource that never returned a
+page at all: a pull that raised a 404 on its first request had zero pages
+fetched, zero pages available, and reported `complete: True`.
+
+A second instance of the same bug sat in `RunStats.complete`, arriving by a
+different route. `all()` over an empty sequence returns `True`, so a run that
+raised before any resource was registered would also have reported success.
+
+Both are the exact failure class this tool exists to make impossible — a
+partial or failed run that exits reporting success — sitting inside the code
+that does the preventing. Neither raised, neither logged, and the summary
+looked entirely normal.
+
+Fixed: unknown page count is complete only when at least one page was fetched,
+and an empty resources set is never complete.
+
+Caught by triggering a 404 mid-run and reading the accounting afterwards,
+rather than by testing only the paths that were expected to work.

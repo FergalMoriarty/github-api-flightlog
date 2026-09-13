@@ -263,3 +263,31 @@ Committing after each increment is what made a one-command recovery possible.
 The lesson is about the tool, not the regex: structural edits to code call for
 whole-unit replacement or an AST-aware tool, not pattern matching across
 function boundaries. A greedy quantifier does not know where a function ends.
+
+## 2026-09-13 — Three silent no-ops while writing the README
+
+Writing the README involved a fenced code block containing a sample report. The
+assistant wrote it with a shell heredoc. The shell consumed the inner fence, and
+the section came out empty — the file was written, the command reported success,
+and 24 lines were missing.
+
+The first fix moved the insertion into a Python script, still delivered by
+heredoc, so the backticks were interpreted before Python saw them. `str.replace`
+found no match and returned the string unchanged. The script printed "inserted"
+and changed nothing.
+
+The second fix built the fence as `chr(96) * 3` so no backtick ever reached the
+shell, and added a guard comparing the string before and after, printing
+"NO MATCH" rather than claiming success. That one worked, and the guard is the
+part worth keeping.
+
+Three attempts, three commands that exited zero, two that did nothing at all.
+`str.replace` returning the original string on no match is the same shape as a
+pagination loop returning page one and reporting success: a plausible result,
+no error, and nothing to notice unless something is checking.
+
+
+Caught by counting the code fences (`grep -c '^```'`) rather than trusting that the
+file had been written. The count was zero twice before it was two — and
+the sentence documenting that check was itself eaten by the shell on the
+first attempt to add it.
